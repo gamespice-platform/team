@@ -12,9 +12,9 @@ GameSpice Core is the only dependency.
 ## Use
 
 ```gdscript
-var teams := DotTeamRoster.new()
-teams.teams  = DotTeamSet.standard_pair()        # blue, red, unassigned, spectator
-teams.policy = DotTeamPolicy.competitive()
+var teams := GSTeamRoster.new()
+teams.teams  = GSTeamSet.standard_pair()        # blue, red, unassigned, spectator
+teams.policy = GSTeamPolicy.competitive()
 teams.alive_fn = func(key): return roster.get_record(key).alive
 add_child(teams)
 teams.setup()
@@ -27,7 +27,7 @@ if teams.are_enemies(shooter, victim):
     apply_damage()
 ```
 
-- `DotTeamSet.palette_colour(i)` and `palette_name(i)` give team `i` (0 is the first) a colour and a name for any number of teams: Red, Blue, Green, Yellow, Violet, Orange, then "Team 7" and on with golden-ratio hues. A game that numbers its teams uses these instead of a table of its own.
+- `GSTeamSet.palette_colour(i)` and `palette_name(i)` give team `i` (0 is the first) a colour and a name for any number of teams: Red, Blue, Green, Yellow, Violet, Orange, then "Team 7" and on with golden-ratio hues. A game that numbers its teams uses these instead of a table of its own.
 - `standard_pair()` has four entries: blue, red, unassigned and spectator. "Connected but not chosen yet" needs a real id, or it ends up as an empty string that matches nothing or everything.
 - Free-for-all is one team with friendly fire on, not "no teams".
 - `are_enemies` is the one answer other addons ask. A spectator is nobody's enemy.
@@ -42,11 +42,11 @@ if not res.ok:
 
 ## Autobalance
 
-Every function in `DotTeamBalance` is static and takes counts, not a roster, so a decision can be printed, logged and replayed:
+Every function in `GSTeamBalance` is static and takes counts, not a roster, so a decision can be printed, logged and replayed:
 
 ```gdscript
-DotTeamBalance.moves_to_balance({&"blue": 6, &"red": 2}, order, 1)
-DotTeamBalance.explain(&"blue", &"red", "ada", 6)
+GSTeamBalance.moves_to_balance({&"blue": 6, &"red": 2}, order, 1)
+GSTeamBalance.explain(&"blue", &"red", "ada", 6)
 # "ada moved from blue to red: the sides were 6 apart"
 ```
 
@@ -58,14 +58,14 @@ Who gets moved is a policy: `newest` (default, since the newest player has least
 teams.bind_match(match_node.teams)
 ```
 
-GameSpice Team is the authority and GameSpice Match is told, through duck typing (`assign(key, index)` if present). Everybody already assigned is pushed when you bind. GameSpice Match has its own smaller `DotTeam` class, which is why this addon's names differ.
+GameSpice Team is the authority and GameSpice Match is told, through duck typing (`assign(key, index)` if present). Everybody already assigned is pushed when you bind. GameSpice Match has its own smaller `GSTeam` class, which is why this addon's names differ.
 
 ## Spectating by side
 
-`DotTeamSpectate` maps GameSpice Team's named sides to [GameSpice Spectate](https://github.com/gamespice-platform/spectate)'s numbered ones and holds the watch policy. GameSpice Spectate is not a dependency: the manager is duck-typed and built automatically if the class exists.
+`GSTeamSpectate` maps GameSpice Team's named sides to [GameSpice Spectate](https://github.com/gamespice-platform/spectate)'s numbered ones and holds the watch policy. GameSpice Spectate is not a dependency: the manager is duck-typed and built automatically if the class exists.
 
 ```gdscript
-var spectate := DotTeamSpectate.new()
+var spectate := GSTeamSpectate.new()
 spectate.teams = team_roster
 spectate.alive_fn = func(key): return roster.get_record(key).alive
 spectate.pose_fn  = func(key): return eye_transform_of(key)
@@ -89,7 +89,7 @@ GameSpice Spectate's own `force_camera` is applied first and this policy cannot 
 
 ## Picking who takes a role
 
-For games with one special side (hunters, drivers), `DotTeamRotation` picks who takes it each round and says why.
+For games with one special side (hunters, drivers), `GSTeamRotation` picks who takes it each round and says why.
 
 | Mode | Picks |
 | --- | --- |
@@ -101,9 +101,9 @@ Players who asked for the role go first, players who asked to stay out go last.
 
 ```gdscript
 var history := {}   # keep this for the session
-var want := DotTeamRotation.count_for(players.size(), 4.0, 1, 6)   # one per 4 players, min 1, max 6
-var result := DotTeamRotation.pick(players, want, DotTeamRotation.Mode.QUEUE, history, round_seed, wishes)
-DotTeamRotation.note(history, players, result["picked"], round_number)
+var want := GSTeamRotation.count_for(players.size(), 4.0, 1, 6)   # one per 4 players, min 1, max 6
+var result := GSTeamRotation.pick(players, want, GSTeamRotation.Mode.QUEUE, history, round_seed, wishes)
+GSTeamRotation.note(history, players, result["picked"], round_number)
 print(result["why"])   # {"ada": "the fewest turns: 2 of 9 rounds", ...}
 ```
 

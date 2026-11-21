@@ -1,9 +1,9 @@
 @tool
-class_name DotTeamBlockConfig
-extends DotConfig
+class_name GSTeamBlockConfig
+extends GSConfig
 
 ## Whether players stop at each other, by relation. The boot defaults of the `mp_teamblock`
-## family of cvars; [DotTeamBlockRules.bind_cvars] makes them live.
+## family of cvars; [GSTeamBlockRules.bind_cvars] makes them live.
 
 ## Whether teammates stop at each other. Off: they walk through.
 @export var team_block: bool = false

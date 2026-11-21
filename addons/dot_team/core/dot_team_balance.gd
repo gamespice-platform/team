@@ -1,4 +1,4 @@
-class_name DotTeamBalance
+class_name GSTeamBalance
 extends RefCounted
 
 ## Which side somebody should join, and who should be moved. Pure, and explainable.
@@ -151,7 +151,7 @@ static func choose_victim(
 		return ""
 
 	match rule:
-		DotTeamPolicy.Victim.RANDOM:
+		GSTeamPolicy.Victim.RANDOM:
 			if rng == null:
 				# Not an error, and not a silent fallback either: without a generator
 				# the answer would depend on nothing reproducible, and two machines
@@ -159,10 +159,10 @@ static func choose_victim(
 				return _by(eligible, "joined_tick", false)
 			return str(eligible[rng.randi_range(0, eligible.size() - 1)].get("key", ""))
 
-		DotTeamPolicy.Victim.LOWEST_SCORE:
+		GSTeamPolicy.Victim.LOWEST_SCORE:
 			return _by(eligible, "score", true)
 
-		DotTeamPolicy.Victim.OLDEST:
+		GSTeamPolicy.Victim.OLDEST:
 			return _by(eligible, "joined_tick", true)
 
 		_:

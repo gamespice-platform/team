@@ -17,18 +17,18 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is sp
 
 | Path | What |
 | --- | --- |
-| `core/dot_team_def.gd` | `DotTeamDef`: one side; colour, friendly fire, cap, `playing`, `attributes` |
-| `core/dot_team_set.gd` | `DotTeamSet`: the sides a session has, presets (`standard_pair()`), `are_enemies`, the shared `palette_colour` / `palette_name` for numbered teams |
-| `core/dot_team_policy.gd` | `DotTeamPolicy`: joining, switching, locking, balancing; a `DotConfig` with `validate()` |
-| `core/dot_team_balance.gd` | `DotTeamBalance`: all the arithmetic, static and pure |
-| `core/dot_team_rotation.gd` | `DotTeamRotation`: who takes a role this round (`RANDOM`, `QUEUE`, `SWAP`), and why |
-| `core/dot_team_spectate_rules.gd` | `DotTeamSpectateRules`: who may watch whom |
-| `runtime/dot_team_roster.gd` | `DotTeamRoster`: who is on which side, authoritative or mirrored; `bind_match`, `live_fn` |
-| `runtime/dot_team_spectate.gd` | `DotTeamSpectate`: the duck-typed bridge to GameSpice Spectate |
-| `core/dot_team_block_rules.gd`, `core/dot_team_block_config.gd` | `DotTeamBlockRules`: whether two players stop at each other, by relation (`mp_teamblock` 0, `mp_enemyblock` 1), per-player or per-team `!block`/`!noblock` requests, replicated as `mp_blockstate`; `DotTeamBlockConfig` is its layered config |
-| `runtime/dot_team_block_commands.gd` | `DotTeamBlockCommands`: `!block` / `!noblock` on a duck-typed host (DotModule or DotConsole), chat-enabled, gated by `mp_blockcmd` |
-| `runtime/dot_team_menu_server.gd` | `DotTeamMenuServer`: the server half of the team menu (period key). Answers the `teams` command with a `team_menu` notice and validates `teams <id\|auto\|spectate\|play>` against `mp_teamswitch_enabled`, `_cooldown`, `_imbalance`, `_maxplayers`, `_anytime`, `_kill`, `_spectate`. The game supplies `teams_fn`, `state_fn`, `join_fn`, `spectate_fn`, `play_fn`, `window_fn`; it never knows how the game keeps teams |
-| `dot_team_api.gd` | the API level; bump `LEVEL` for anything new a game can call (rule on GameSpice Core's `DotAddonApi`) |
+| `core/dot_team_def.gd` | `GSTeamDef`: one side; colour, friendly fire, cap, `playing`, `attributes` |
+| `core/dot_team_set.gd` | `GSTeamSet`: the sides a session has, presets (`standard_pair()`), `are_enemies`, the shared `palette_colour` / `palette_name` for numbered teams |
+| `core/dot_team_policy.gd` | `GSTeamPolicy`: joining, switching, locking, balancing; a `GSConfig` with `validate()` |
+| `core/dot_team_balance.gd` | `GSTeamBalance`: all the arithmetic, static and pure |
+| `core/dot_team_rotation.gd` | `GSTeamRotation`: who takes a role this round (`RANDOM`, `QUEUE`, `SWAP`), and why |
+| `core/dot_team_spectate_rules.gd` | `GSTeamSpectateRules`: who may watch whom |
+| `runtime/dot_team_roster.gd` | `GSTeamRoster`: who is on which side, authoritative or mirrored; `bind_match`, `live_fn` |
+| `runtime/dot_team_spectate.gd` | `GSTeamSpectate`: the duck-typed bridge to GameSpice Spectate |
+| `core/dot_team_block_rules.gd`, `core/dot_team_block_config.gd` | `GSTeamBlockRules`: whether two players stop at each other, by relation (`mp_teamblock` 0, `mp_enemyblock` 1), per-player or per-team `!block`/`!noblock` requests, replicated as `mp_blockstate`; `GSTeamBlockConfig` is its layered config |
+| `runtime/dot_team_block_commands.gd` | `GSTeamBlockCommands`: `!block` / `!noblock` on a duck-typed host (GSModule or GSConsole), chat-enabled, gated by `mp_blockcmd` |
+| `runtime/dot_team_menu_server.gd` | `GSTeamMenuServer`: the server half of the team menu (period key). Answers the `teams` command with a `team_menu` notice and validates `teams <id\|auto\|spectate\|play>` against `mp_teamswitch_enabled`, `_cooldown`, `_imbalance`, `_maxplayers`, `_anytime`, `_kill`, `_spectate`. The game supplies `teams_fn`, `state_fn`, `join_fn`, `spectate_fn`, `play_fn`, `window_fn`; it never knows how the game keeps teams |
+| `dot_team_api.gd` | the API level; bump `LEVEL` for anything new a game can call (rule on GameSpice Core's `GSAddonApi`) |
 | `examples/team_selftest.tscn`, `team_spectate_selftest.tscn` | the two suites |
 
 Paths except `examples/` are in `addons/dot_team/`.
@@ -46,13 +46,13 @@ The family's two steps ([family CLAUDE.md](../../CLAUDE.md#validating-anything))
 - Ask `are_enemies` here; never write "their team is not mine" elsewhere. [design](docs/design.md#are_enemies-is-written-once)
 - Add an `attributes` key, not a field, for another addon's need. [design](docs/design.md#attributes-is-open-on-purpose)
 - `validate()` refuses `max_difference = 0` and no-choice-no-auto-assign; keep both. [design](docs/design.md#validate-refuses-two-configurations-and-both-have-a-symptom)
-- Never write a `DotSpectator*` or GameSpice Match identifier in a statement; find classes by `get_global_class_list()` and call by name. [design](docs/design.md#the-spectate-bridge-an-index-not-a-cast)
+- Never write a `GSSpectator*` or GameSpice Match identifier in a statement; find classes by `get_global_class_list()` and call by name. [design](docs/design.md#the-spectate-bridge-an-index-not-a-cast)
 - `team_index` is one-based over playing ids, cached at `setup()`; the filter runs after GameSpice Spectate's own rules. [design](docs/design.md#the-spectate-bridge-an-index-not-a-cast)
 - A random draw is mixed, never a raw string hash. [design](docs/design.md#who-takes-a-role-dotteamrotation)
 
 Not here: scoring, spawning, damage, drawing, rounds (`live_fn`), player records. [design](docs/design.md#what-this-does-not-do)
-- Ask `DotTeamBlockRules.blocks(a, b)` whether two players stop at each other; never compare sides in a collision layer. Teammates pass by default, enemies stop, and a player with no side (a free-for-all, a solo game, a spectator) is an enemy, so those stay solid. [design](docs/design.md#players-stop-at-each-other-by-relation)
+- Ask `GSTeamBlockRules.blocks(a, b)` whether two players stop at each other; never compare sides in a collision layer. Teammates pass by default, enemies stop, and a player with no side (a free-for-all, a solo game, a spectator) is an enemy, so those stay solid. [design](docs/design.md#players-stop-at-each-other-by-relation)
 
 ## Open
 
-- mg-deathrun still draws its activators with its own `DrGame._draw_sides` rather than `DotTeamRotation`, which was extracted from it; mg-prop-hunt and game-hide-n-seek use `DotTeamRotation`. Not yet converted; reason unknown (mg-deathrun's design doc argues for a draw that excludes last round's activators, which `RANDOM` already does).
+- mg-deathrun still draws its activators with its own `DrGame._draw_sides` rather than `GSTeamRotation`, which was extracted from it; mg-prop-hunt and game-hide-n-seek use `GSTeamRotation`. Not yet converted; reason unknown (mg-deathrun's design doc argues for a draw that excludes last round's activators, which `RANDOM` already does).

@@ -28,19 +28,19 @@ func _line(text: String) -> void:
 func _test_block() -> void:
 	_section("Block rules: teammates pass, enemies stop")
 	var sides := {1: &"blue", 2: &"blue", 3: &"red", 4: &"", 5: &"spectators"}
-	var rules := DotTeamBlockRules.new()
+	var rules := GSTeamBlockRules.new()
 	rules.side_fn = func(key: Variant) -> Variant: return sides.get(int(key), &"")
-	rules.team_set = DotTeamSet.standard_pair()
+	rules.team_set = GSTeamSet.standard_pair()
 	_check(not rules.blocks(1, 2), "two teammates pass through each other by default")
 	_check(rules.blocks(1, 3), "enemies stop at each other by default")
 	_check(rules.blocks(1, 4) and rules.blocks(4, 4), "a player with no team is an enemy of everyone, so stays solid")
 	_check(rules.blocks(1, 5) and rules.blocks(5, 5), "spectators are nobody's teammates")
 
-	var ffa := DotTeamBlockRules.new()
+	var ffa := GSTeamBlockRules.new()
 	ffa.side_fn = func(_key: Variant) -> Variant: return &"players"
-	ffa.team_set = DotTeamSet.free_for_all()
+	ffa.team_set = GSTeamSet.free_for_all()
 	_check(ffa.blocks(1, 2), "a free-for-all (one playing side) stays solid")
-	var solo := DotTeamBlockRules.new()
+	var solo := GSTeamBlockRules.new()
 	_check(solo.blocks(1, 2), "a solo game with no side function stays solid")
 
 	var made := _block_cvars(rules)
@@ -49,7 +49,7 @@ func _test_block() -> void:
 	_block_client_and_modes(rules, host, session_one)
 
 
-func _block_cvars(rules: DotTeamBlockRules) -> Dictionary:
+func _block_cvars(rules: GSTeamBlockRules) -> Dictionary:
 	var made := {}
 	var add := func(n: String, v: String, _d: String, _f: int) -> Object:
 		var c := FakeCvar.new()
@@ -57,22 +57,22 @@ func _block_cvars(rules: DotTeamBlockRules) -> Dictionary:
 		made[n] = c
 		return c
 	var _bound := rules.bind_cvars(add, 4, 4)
-	_check(made.size() == 6 and (made[DotTeamBlockRules.CVAR_TEAM] as FakeCvar).value == "0"
-		and (made[DotTeamBlockRules.CVAR_ENEMY] as FakeCvar).value == "1", "six cvars bound with the defaults 0 and 1")
-	(made[DotTeamBlockRules.CVAR_TEAM] as FakeCvar).set_value("1")
+	_check(made.size() == 6 and (made[GSTeamBlockRules.CVAR_TEAM] as FakeCvar).value == "0"
+		and (made[GSTeamBlockRules.CVAR_ENEMY] as FakeCvar).value == "1", "six cvars bound with the defaults 0 and 1")
+	(made[GSTeamBlockRules.CVAR_TEAM] as FakeCvar).set_value("1")
 	_check(rules.blocks(1, 2), "mp_teamblock 1 makes teammates stop")
-	(made[DotTeamBlockRules.CVAR_TEAM] as FakeCvar).set_value("0")
-	(made[DotTeamBlockRules.CVAR_ENEMY] as FakeCvar).set_value("0")
+	(made[GSTeamBlockRules.CVAR_TEAM] as FakeCvar).set_value("0")
+	(made[GSTeamBlockRules.CVAR_ENEMY] as FakeCvar).set_value("0")
 	_check(not rules.blocks(1, 3), "mp_enemyblock 0 lets enemies through")
-	(made[DotTeamBlockRules.CVAR_ENEMY] as FakeCvar).set_value("1")
-	var layered := DotTeamBlockConfig.new()
+	(made[GSTeamBlockRules.CVAR_ENEMY] as FakeCvar).set_value("1")
+	var layered := GSTeamBlockConfig.new()
 	var _env := layered.apply_dictionary({"team_block": true, "command_mode": 1})
 	_check(layered.team_block and layered.command_mode == 1, "the layered config takes overrides")
 	return made
 
 
-func _block_commands(rules: DotTeamBlockRules, host: FakeHost, made: Dictionary) -> FakeSession:
-	var commands := DotTeamBlockCommands.new(rules)
+func _block_commands(rules: GSTeamBlockRules, host: FakeHost, made: Dictionary) -> FakeSession:
+	var commands := GSTeamBlockCommands.new(rules)
 	_check(commands.install(host).ok and host.handlers.has("block") and host.handlers.has("noblock"),
 		"!block and !noblock register on a duck-typed host")
 	var session_one := FakeSession.new()
@@ -99,15 +99,15 @@ func _block_commands(rules: DotTeamBlockRules, host: FakeHost, made: Dictionary)
 	_check(not rules.blocks(1, 3) and rules.blocks(2, 3), "an admin may, and only for their own pairs")
 	host.handlers["block"].call(FakeCtx.new())
 	_check(rules.blocks(2, 3), "a console without a session is refused harmlessly")
-	_check((made[DotTeamBlockRules.CVAR_STATE] as FakeCvar).value == rules.state_string(), "the state rides the replicated cvar")
+	_check((made[GSTeamBlockRules.CVAR_STATE] as FakeCvar).value == rules.state_string(), "the state rides the replicated cvar")
 	return session_one
 
 
-func _block_client_and_modes(rules: DotTeamBlockRules, host: FakeHost, session_one: FakeSession) -> void:
-	var client := DotTeamBlockRules.new()
+func _block_client_and_modes(rules: GSTeamBlockRules, host: FakeHost, session_one: FakeSession) -> void:
+	var client := GSTeamBlockRules.new()
 	client.side_fn = rules.side_fn
 	client.team_set = rules.team_set
-	client.set_cvar(DotTeamBlockRules.CVAR_STATE, rules.state_string())
+	client.set_cvar(GSTeamBlockRules.CVAR_STATE, rules.state_string())
 	_check(client.blocks(1, 2) == rules.blocks(1, 2) and client.blocks(1, 3) == rules.blocks(1, 3),
 		"a client decodes the same pairs")
 
@@ -130,19 +130,19 @@ func _block_client_and_modes(rules: DotTeamBlockRules, host: FakeHost, session_o
 func _test_rotation() -> void:
 	_section("Who takes a role this round, and why")
 
-	_check(DotTeamRotation.count_for(1, 4.0) == 0, "one player takes no role: there is nobody to play against")
-	_check(DotTeamRotation.count_for(2, 4.0) == 1, "two players, one of each")
-	_check(DotTeamRotation.count_for(9, 4.0) == 3, "one per four, rounded up (9 players, 3)")
-	_check(DotTeamRotation.count_for(30, 4.0, 1, 5) == 5, "and capped (30 players, at most 5)")
-	_check(DotTeamRotation.count_for(3, 1.0) == 2, "and never everybody (3 at one each, 2)")
+	_check(GSTeamRotation.count_for(1, 4.0) == 0, "one player takes no role: there is nobody to play against")
+	_check(GSTeamRotation.count_for(2, 4.0) == 1, "two players, one of each")
+	_check(GSTeamRotation.count_for(9, 4.0) == 3, "one per four, rounded up (9 players, 3)")
+	_check(GSTeamRotation.count_for(30, 4.0, 1, 5) == 5, "and capped (30 players, at most 5)")
+	_check(GSTeamRotation.count_for(3, 1.0) == 2, "and never everybody (3 at one each, 2)")
 
 	var keys: Array[StringName] = [&"a", &"b", &"c", &"d", &"e", &"f"]
 
 	# RANDOM passes over last round's holders while anybody else is left.
 	var history := {}
-	var first: Dictionary = DotTeamRotation.pick(keys, 2, DotTeamRotation.Mode.RANDOM, history, 11)
-	DotTeamRotation.note(history, keys, first["picked"], 1)
-	var second: Dictionary = DotTeamRotation.pick(keys, 2, DotTeamRotation.Mode.RANDOM, history, 12)
+	var first: Dictionary = GSTeamRotation.pick(keys, 2, GSTeamRotation.Mode.RANDOM, history, 11)
+	GSTeamRotation.note(history, keys, first["picked"], 1)
+	var second: Dictionary = GSTeamRotation.pick(keys, 2, GSTeamRotation.Mode.RANDOM, history, 12)
 	var repeated := false
 	for k: StringName in second["picked"]:
 		if (first["picked"] as Array).has(k):
@@ -153,7 +153,7 @@ func _test_rotation() -> void:
 	# draws one key first every time.
 	var firsts := {}
 	for seed_value in range(200):
-		var f: Dictionary = DotTeamRotation.pick(keys, 1, DotTeamRotation.Mode.RANDOM, {}, seed_value)
+		var f: Dictionary = GSTeamRotation.pick(keys, 1, GSTeamRotation.Mode.RANDOM, {}, seed_value)
 		var k: StringName = (f["picked"] as Array)[0]
 		firsts[k] = int(firsts.get(k, 0)) + 1
 	var fewest := 999
@@ -161,14 +161,14 @@ func _test_rotation() -> void:
 		fewest = mini(fewest, int(firsts.get(k, 0)))
 	_check(firsts.size() == keys.size() and fewest >= 15, "the draw is spread over everybody (%s in 200)" % firsts)
 
-	var again: Dictionary = DotTeamRotation.pick(keys, 2, DotTeamRotation.Mode.RANDOM, {}, 11)
+	var again: Dictionary = GSTeamRotation.pick(keys, 2, GSTeamRotation.Mode.RANDOM, {}, 11)
 	_check(again["picked"] == first["picked"], "and the same seed draws the same people")
 
 	# QUEUE: an equal share over many rounds.
 	var queue := {}
 	for round_number in range(1, 13):
-		var r: Dictionary = DotTeamRotation.pick(keys, 2, DotTeamRotation.Mode.QUEUE, queue, round_number)
-		DotTeamRotation.note(queue, keys, r["picked"], round_number)
+		var r: Dictionary = GSTeamRotation.pick(keys, 2, GSTeamRotation.Mode.QUEUE, queue, round_number)
+		GSTeamRotation.note(queue, keys, r["picked"], round_number)
 	var lo := 999
 	var hi := -1
 	for k in keys:
@@ -180,14 +180,14 @@ func _test_rotation() -> void:
 	# A newcomer to a queue is not made to wait behind everybody.
 	var late: Array[StringName] = keys.duplicate()
 	late.append(&"g")
-	var with_new: Dictionary = DotTeamRotation.pick(late, 2, DotTeamRotation.Mode.QUEUE, queue, 13)
+	var with_new: Dictionary = GSTeamRotation.pick(late, 2, GSTeamRotation.Mode.QUEUE, queue, 13)
 	_check((with_new["picked"] as Array).has(&"g"), "and somebody new goes first: nobody has had fewer turns")
 
 	# SWAP: the sides change over.
 	var swap := {}
-	var s1: Dictionary = DotTeamRotation.pick(keys, 3, DotTeamRotation.Mode.SWAP, swap, 5)
-	DotTeamRotation.note(swap, keys, s1["picked"], 1)
-	var s2: Dictionary = DotTeamRotation.pick(keys, 3, DotTeamRotation.Mode.SWAP, swap, 6)
+	var s1: Dictionary = GSTeamRotation.pick(keys, 3, GSTeamRotation.Mode.SWAP, swap, 5)
+	GSTeamRotation.note(swap, keys, s1["picked"], 1)
+	var s2: Dictionary = GSTeamRotation.pick(keys, 3, GSTeamRotation.Mode.SWAP, swap, 6)
 	var crossed := true
 	for k: StringName in s2["picked"]:
 		if (s1["picked"] as Array).has(k):
@@ -197,16 +197,16 @@ func _test_rotation() -> void:
 
 	_rotation_wishes(keys)
 
-	DotTeamRotation.forget(history, &"a")
+	GSTeamRotation.forget(history, &"a")
 	_check(not history.has(&"a"), "a player who left is forgotten")
-	_check(DotTeamRotation.pick(keys, 9, DotTeamRotation.Mode.QUEUE, {}, 1)["picked"].size() == keys.size(),
+	_check(GSTeamRotation.pick(keys, 9, GSTeamRotation.Mode.QUEUE, {}, 1)["picked"].size() == keys.size(),
 		"asking for more than there are picks everybody, not a crash")
 
 
 func _rotation_wishes(keys: Array[StringName]) -> void:
 	# Wishes come first, and a refuser only when there is nobody else.
 	var wishes := {&"e": 1, &"a": -1, &"b": -1, &"c": -1, &"d": -1, &"f": -1}
-	var w: Dictionary = DotTeamRotation.pick(keys, 2, DotTeamRotation.Mode.RANDOM, {}, 3, wishes)
+	var w: Dictionary = GSTeamRotation.pick(keys, 2, GSTeamRotation.Mode.RANDOM, {}, 3, wishes)
 	_check((w["picked"] as Array)[0] == &"e", "a volunteer is picked first")
 	_check(str((w["why"] as Dictionary)[&"e"]) == "asked for it", "and the reason says so")
 	var refuser: StringName = (w["picked"] as Array)[1]
@@ -215,13 +215,13 @@ func _rotation_wishes(keys: Array[StringName]) -> void:
 
 	# rest_first: last round's holder sits out even though they volunteered again.
 	var rested := {}
-	DotTeamRotation.note(rested, keys, [&"e"] as Array[StringName], 0)
+	GSTeamRotation.note(rested, keys, [&"e"] as Array[StringName], 0)
 	var keen := {&"e": 1}
-	var by_wish: Dictionary = DotTeamRotation.pick(keys, 1, DotTeamRotation.Mode.RANDOM, rested, 5, keen)
-	var by_rest: Dictionary = DotTeamRotation.pick(keys, 1, DotTeamRotation.Mode.RANDOM, rested, 5, keen, false, true)
+	var by_wish: Dictionary = GSTeamRotation.pick(keys, 1, GSTeamRotation.Mode.RANDOM, rested, 5, keen)
+	var by_rest: Dictionary = GSTeamRotation.pick(keys, 1, GSTeamRotation.Mode.RANDOM, rested, 5, keen, false, true)
 	_check((by_wish["picked"] as Array)[0] == &"e", "by default a volunteer is drawn again even after a round in the role")
 	_check((by_rest["picked"] as Array)[0] != &"e", "with rest_first, last round's holder rests even though they volunteered")
-	var all_rest: Dictionary = DotTeamRotation.pick([&"e"] as Array[StringName], 1, DotTeamRotation.Mode.RANDOM, rested, 5, keen, false, true)
+	var all_rest: Dictionary = GSTeamRotation.pick([&"e"] as Array[StringName], 1, GSTeamRotation.Mode.RANDOM, rested, 5, keen, false, true)
 	_check((all_rest["picked"] as Array) == [&"e"], "and still comes back when nobody else is left")
 
 

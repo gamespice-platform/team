@@ -1,7 +1,7 @@
-class_name DotTeamBlockRules
+class_name GSTeamBlockRules
 extends RefCounted
 
-## Whether two players stop at each other, per pair; handed to `DotPlayerBodyRules.pair_fn` as
+## Whether two players stop at each other, per pair; handed to `GSPlayerBodyRules.pair_fn` as
 ## `rules.blocks`. Teammates (same [member side_fn] side) pass, enemies and sideless keys block
 ## by `mp_enemyblock`; `!noblock`/`!block` requests ([method request]) replicate as [constant CVAR_STATE].
 
@@ -16,13 +16,13 @@ const CVAR_RELATIONS := "mp_blockcmd_relations"
 const CVAR_SCOPE := "mp_blockscope"
 const CVAR_STATE := "mp_blockstate"
 
-var config: DotTeamBlockConfig = DotTeamBlockConfig.new()
+var config: GSTeamBlockConfig = GSTeamBlockConfig.new()
 
 ## `(key) -> side id` (StringName or String; empty or null for none).
 var side_fn: Callable = Callable()
 
 ## Optional: a side counts as a team only if the set says it is playing, and only when two are.
-var team_set: DotTeamSet = null
+var team_set: GSTeamSet = null
 
 ## Holder -> `[team_override, enemy_override]`, each -1 unset, 0 pass, 1 block.
 var _overrides: Dictionary = {}
@@ -59,25 +59,25 @@ func blocks(a: Variant, b: Variant) -> bool:
 
 
 ## Whether [param key] may use the commands, and why not.
-func may_request(is_admin: bool) -> DotResult:
+func may_request(is_admin: bool) -> GSResult:
 	match config.command_mode:
 		0:
-			return DotResult.fail(DotError.CODE_FORBIDDEN, "Block commands are disabled on this server.")
+			return GSResult.fail(GSError.CODE_FORBIDDEN, "Block commands are disabled on this server.")
 		1:
 			if not is_admin:
-				return DotResult.fail(DotError.CODE_FORBIDDEN, "Only admins may change collision here.")
-	return DotResult.success(true)
+				return GSResult.fail(GSError.CODE_FORBIDDEN, "Only admins may change collision here.")
+	return GSResult.success(true)
 
 
 ## Records [param key]'s wish for [param relations] (a Relation list); [param block] -1 clears.
 ## Refuses by the command mode and the allowed relations.
-func request(key: Variant, relations: Array, block: int, is_admin: bool = false) -> DotResult:
+func request(key: Variant, relations: Array, block: int, is_admin: bool = false) -> GSResult:
 	var allowed := may_request(is_admin)
 	if not allowed.ok:
 		return allowed
 	for rel: Variant in relations:
 		if (config.command_relations & (1 << int(rel))) == 0 and not is_admin:
-			return DotResult.fail(DotError.CODE_FORBIDDEN, "The server does not let players change that.")
+			return GSResult.fail(GSError.CODE_FORBIDDEN, "The server does not let players change that.")
 	var holder := _holder(key)
 	var held: Array = _overrides.get(holder, [-1, -1])
 	for rel: Variant in relations:
@@ -87,7 +87,7 @@ func request(key: Variant, relations: Array, block: int, is_admin: bool = false)
 	else:
 		_overrides[holder] = held
 	_publish()
-	return DotResult.success(true)
+	return GSResult.success(true)
 
 
 ## What [param key] asked for [param rel]: -1 nothing, 0 pass, 1 block.
@@ -147,7 +147,7 @@ func cvar_specs() -> Array[Dictionary]:
 	]
 
 
-## Registers the cvars (see `DotPlayerBodyRules.bind_cvars` for [param add]) and
+## Registers the cvars (see `GSPlayerBodyRules.bind_cvars` for [param add]) and
 ## [constant CVAR_STATE]. Pass GameSpice Server's FLAG_REPLICATED: a client predicts against them.
 ## [param state_flags] for the state is the replicated flag with hidden and not archived.
 func bind_cvars(add: Callable, flags: int = 0, state_flags: int = 0) -> Array:
@@ -240,10 +240,10 @@ func _side(key: Variant) -> String:
 	return "" if side == null else str(side)
 
 
-## Whether [member team_set] has at least two playing sides; [method DotTeamSet.playing_teams] without its array.
+## Whether [member team_set] has at least two playing sides; [method GSTeamSet.playing_teams] without its array.
 func _two_playing() -> bool:
 	var n := 0
-	for t: DotTeamDef in team_set.teams:
+	for t: GSTeamDef in team_set.teams:
 		if t != null and t.playing:
 			n += 1
 			if n >= 2:

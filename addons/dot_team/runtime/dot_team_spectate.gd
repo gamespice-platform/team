@@ -1,4 +1,4 @@
-class_name DotTeamSpectate
+class_name GSTeamSpectate
 extends Node
 
 ## Spectating, with sides. The bridge between GameSpice Team and GameSpice Spectate.
@@ -16,7 +16,7 @@ extends Node
 ## of rounds and sides rather than of camera modes.
 ##
 ## [codeblock]
-## var spectate := DotTeamSpectate.new()
+## var spectate := GSTeamSpectate.new()
 ## spectate.teams = team_roster
 ## add_child(spectate)
 ## spectate.setup()
@@ -41,7 +41,7 @@ signal ended(key: String)
 ## Somebody was moved to or from the spectator side.
 signal side_changed(key: String, to: StringName)
 
-@export var rules: DotTeamSpectateRules = null
+@export var rules: GSTeamSpectateRules = null
 
 ## GameSpice Spectate's own rules object, if the game has one to hand over.
 ##
@@ -52,9 +52,9 @@ var spectator_rules: Object = null
 @export var register_service: bool = true
 
 ## The side roster. Required.
-var teams: DotTeamRoster = null
+var teams: GSTeamRoster = null
 
-## The camera and policy half: a `DotSpectatorManager`, or anything the same shape.
+## The camera and policy half: a `GSSpectatorManager`, or anything the same shape.
 ##
 ## Built by [method setup] when GameSpice Spectate is installed and nothing was assigned.
 var spectators: Node = null
@@ -76,16 +76,16 @@ var _playing_ids: Array[StringName] = []
 
 func _ready() -> void:
 	if rules == null:
-		rules = DotTeamSpectateRules.new()
+		rules = GSTeamSpectateRules.new()
 
 	if register_service:
-		DotRegistry.register(SERVICE, self)
+		GSRegistry.register(SERVICE, self)
 
 
 ## Wires the two addons together. Call once, after assigning [member teams].
-func setup() -> DotResult:
+func setup() -> GSResult:
 	if rules == null:
-		rules = DotTeamSpectateRules.new()
+		rules = GSTeamSpectateRules.new()
 
 	var valid := rules.validate()
 
@@ -93,19 +93,19 @@ func setup() -> DotResult:
 		return valid.wrap("These team-spectate rules were not installed")
 
 	if teams == null:
-		return DotResult.fail(
-			DotError.CODE_STATE,
-			"DotTeamSpectate has no team roster.",
+		return GSResult.fail(
+			GSError.CODE_STATE,
+			"GSTeamSpectate has no team roster.",
 			"Assign `teams` before calling setup(); the whole addon is the bridge "
 			+ "between that and dot-spectate."
 		)
 
 	if not teams.teams.has_team(rules.spectator_team):
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"The team set has no side called '%s'." % String(rules.spectator_team),
 			"Nobody could be moved to it, so join_spectators would fail for everybody. "
-			+ "DotTeamSet.standard_pair() includes one."
+			+ "GSTeamSet.standard_pair() includes one."
 		)
 
 	if spectators == null:
@@ -115,12 +115,12 @@ func setup() -> DotResult:
 			# Legal, and the common case in a lobby: sides without cameras. Everything
 			# in this node that is about assignment still works; everything about
 			# watching answers "not set up", which is honest rather than silent.
-			DotLog.debug(
+			GSLog.debug(
 				CHANNEL,
 				"no spectator manager; the watching half of this node is inert",
 				{}
 			)
-			return DotResult.success(null)
+			return GSResult.success(null)
 
 		spectators.name = "Spectators"
 
@@ -143,12 +143,12 @@ func setup() -> DotResult:
 	spectators.set("target_filter", Callable(self, "_may_watch"))
 
 	var ready: Variant = spectators.call("setup")
-	return ready as DotResult if ready is DotResult else DotResult.success(null)
+	return ready as GSResult if ready is GSResult else GSResult.success(null)
 
 
-## Builds a `DotSpectatorManager` without naming it.
+## Builds a `GSSpectatorManager` without naming it.
 ##
-## [b]The same trick GameSpice Core's [code]DotTransportENet[/code] uses, for a related
+## [b]The same trick GameSpice Core's [code]GSTransportENet[/code] uses, for a related
 ## reason.[/b] That one reaches ENet through [method ClassDB.instantiate] because a
 ## script that merely MENTIONS [code]ENetMultiplayerPeer[/code] fails to compile on a
 ## web export where the class is absent. This one reaches a script class the same way,
@@ -160,7 +160,7 @@ func _make_spectator_manager() -> Node:
 	for entry: Variant in ProjectSettings.get_global_class_list():
 		var row := entry as Dictionary
 
-		if str(row.get("class", "")) != "DotSpectatorManager":
+		if str(row.get("class", "")) != "GSSpectatorManager":
 			continue
 
 		var script := load(str(row.get("path", ""))) as Script
@@ -211,7 +211,7 @@ func target_of(key: String) -> String:
 	return str((v as Object).get("target")) if v is Object else ""
 
 
-## Which camera mode they are in. See GameSpice Spectate's `DotSpectatorView.Mode`.
+## Which camera mode they are in. See GameSpice Spectate's `GSSpectatorView.Mode`.
 func mode_of(key: String) -> int:
 	if spectators == null:
 		return 0
@@ -252,11 +252,11 @@ func watchable(key: String) -> PackedStringArray:
 
 
 ## Whether one person may watch another, with the reason if not.
-func may_watch(key: String, target: String) -> DotResult:
+func may_watch(key: String, target: String) -> GSResult:
 	if spectators == null:
-		return DotResult.fail(DotError.CODE_STATE, "Not set up.")
+		return GSResult.fail(GSError.CODE_STATE, "Not set up.")
 
-	return spectators.call("may_watch", key, target) as DotResult
+	return spectators.call("may_watch", key, target) as GSResult
 
 
 # --- Doing ------------------------------------------------------------------
@@ -266,11 +266,11 @@ func may_watch(key: String, target: String) -> DotResult:
 ## Chooses rather than requiring one, because every caller would otherwise write the
 ## same "find somebody sensible" loop — and the version that gets written in a hurry
 ## picks the first participant, which is usually the person who just killed them.
-func begin(key: String, prefer: String = "") -> DotResult:
+func begin(key: String, prefer: String = "") -> GSResult:
 	if spectators == null:
-		return DotResult.fail(DotError.CODE_STATE, "Not set up.")
+		return GSResult.fail(GSError.CODE_STATE, "Not set up.")
 
-	var allowed := spectators.call("may_spectate", key) as DotResult
+	var allowed := spectators.call("may_spectate", key) as GSResult
 
 	if not allowed.ok:
 		return allowed
@@ -281,16 +281,16 @@ func begin(key: String, prefer: String = "") -> DotResult:
 		var options := watchable(key)
 
 		if options.is_empty():
-			return DotResult.fail(
-				DotError.CODE_STATE,
+			return GSResult.fail(
+				GSError.CODE_STATE,
 				"There is nobody %s is allowed to watch." % key,
 				"Every playing side may be empty, or the rules may be stricter than "
-				+ "the session. See DotTeamSpectateRules."
+				+ "the session. See GSTeamSpectateRules."
 			)
 
 		target = options[0]
 
-	var res := spectators.call("watch", key, target) as DotResult
+	var res := spectators.call("watch", key, target) as GSResult
 
 	if res.ok:
 		began.emit(key, target)
@@ -307,40 +307,40 @@ func end(key: String) -> void:
 	ended.emit(key)
 
 
-func next(key: String) -> DotResult:
+func next(key: String) -> GSResult:
 	if spectators == null:
-		return DotResult.fail(DotError.CODE_STATE, "Not set up.")
+		return GSResult.fail(GSError.CODE_STATE, "Not set up.")
 
-	return spectators.call("next_target", key) as DotResult
+	return spectators.call("next_target", key) as GSResult
 
 
-func previous(key: String) -> DotResult:
+func previous(key: String) -> GSResult:
 	if spectators == null:
-		return DotResult.fail(DotError.CODE_STATE, "Not set up.")
+		return GSResult.fail(GSError.CODE_STATE, "Not set up.")
 
-	return spectators.call("previous_target", key) as DotResult
+	return spectators.call("previous_target", key) as GSResult
 
 
 ## Points a viewer at the first watchable member of a side.
 ##
-## What a "watch the other team" button does, and it is a [DotResult] rather than a
+## What a "watch the other team" button does, and it is a [GSResult] rather than a
 ## boolean because the refusal — you may not watch that side — is the answer a player
 ## needs to see.
-func watch_team(key: String, team_id: StringName) -> DotResult:
+func watch_team(key: String, team_id: StringName) -> GSResult:
 	if spectators == null:
-		return DotResult.fail(DotError.CODE_STATE, "Not set up.")
+		return GSResult.fail(GSError.CODE_STATE, "Not set up.")
 
 	if teams == null or not teams.teams.has_team(team_id):
-		return DotResult.fail(
-			DotError.CODE_INVALID, "There is no side called '%s'." % String(team_id)
+		return GSResult.fail(
+			GSError.CODE_INVALID, "There is no side called '%s'." % String(team_id)
 		)
 
 	for candidate in teams.members(team_id):
-		if (spectators.call("may_watch", key, candidate) as DotResult).ok:
-			return spectators.call("watch", key, candidate) as DotResult
+		if (spectators.call("may_watch", key, candidate) as GSResult).ok:
+			return spectators.call("watch", key, candidate) as GSResult
 
-	return DotResult.fail(
-		DotError.CODE_FORBIDDEN,
+	return GSResult.fail(
+		GSError.CODE_FORBIDDEN,
 		"There is nobody on %s you may watch." % teams.teams.display_of(team_id)
 	)
 
@@ -350,13 +350,13 @@ func watch_team(key: String, team_id: StringName) -> DotResult:
 ## The two together on purpose: a spectator staring at a black screen is
 ## indistinguishable from a crash, and every game that separates the two calls forgets
 ## the second one in at least one code path.
-func join_spectators(key: String) -> DotResult:
+func join_spectators(key: String) -> GSResult:
 	if teams == null:
-		return DotResult.fail(DotError.CODE_STATE, "No team roster.")
+		return GSResult.fail(GSError.CODE_STATE, "No team roster.")
 
 	if not rules.allow_join_while_alive and _alive(key):
-		return DotResult.fail(
-			DotError.CODE_STATE,
+		return GSResult.fail(
+			GSError.CODE_STATE,
 			"You cannot become a spectator while you are alive.",
 			"Killing the player first is the game's decision, not this addon's — a "
 			+ "living player who became a spectator would have a way out of a fight."
@@ -370,7 +370,7 @@ func join_spectators(key: String) -> DotResult:
 	side_changed.emit(key, rules.spectator_team)
 
 	if not rules.watch_on_join:
-		return DotResult.success(null)
+		return GSResult.success(null)
 
 	var begun := begin(key)
 
@@ -378,15 +378,15 @@ func join_spectators(key: String) -> DotResult:
 	# a spectator, which is what they asked for, and the empty view is reported rather
 	# than undoing the move they can see happened.
 	if not begun.ok:
-		DotLog.debug(CHANNEL, "joined spectators with nobody to watch", {"key": key})
+		GSLog.debug(CHANNEL, "joined spectators with nobody to watch", {"key": key})
 
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 ## Puts somebody back into the game and stops their camera.
-func leave_spectators(key: String, team_id: StringName = &"") -> DotResult:
+func leave_spectators(key: String, team_id: StringName = &"") -> GSResult:
 	if teams == null:
-		return DotResult.fail(DotError.CODE_STATE, "No team roster.")
+		return GSResult.fail(GSError.CODE_STATE, "No team roster.")
 
 	var wanted := team_id
 
@@ -403,7 +403,7 @@ func leave_spectators(key: String, team_id: StringName = &"") -> DotResult:
 
 	end(key)
 	side_changed.emit(key, wanted)
-	return DotResult.success(wanted)
+	return GSResult.success(wanted)
 
 
 ## One tick. Advances the camera history and the death-cam chain.
@@ -439,7 +439,7 @@ func describe_lines() -> PackedStringArray:
 
 
 func describe() -> String:
-	return "DotTeamSpectate(%d viewers)" % viewers().size()
+	return "GSTeamSpectate(%d viewers)" % viewers().size()
 
 
 # --- The callables GameSpice Spectate is given ------------------------------------

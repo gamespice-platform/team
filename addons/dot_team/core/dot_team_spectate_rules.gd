@@ -1,6 +1,6 @@
 @tool
-class_name DotTeamSpectateRules
-extends DotConfig
+class_name GSTeamSpectateRules
+extends GSConfig
 
 ## Who may watch whom, in terms of sides rather than of numbers.
 ##
@@ -41,10 +41,10 @@ extends DotConfig
 
 @export_group("Joining and leaving")
 
-## Which side [method DotTeamSpectate.join_spectators] moves people to.
+## Which side [method GSTeamSpectate.join_spectators] moves people to.
 @export var spectator_team: StringName = &"spectator"
 
-## Which side [method DotTeamSpectate.leave_spectators] puts them back on when they
+## Which side [method GSTeamSpectate.leave_spectators] puts them back on when they
 ## name none. Empty asks GameSpice Team for the smallest.
 @export var rejoin_team: StringName = &""
 
@@ -83,10 +83,10 @@ func cli_prefix() -> String:
 	return "--team-spectate-"
 
 
-func validate() -> DotResult:
+func validate() -> GSResult:
 	if spectator_team == &"":
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"There is no spectator side named, so nobody can be moved to one."
 		)
 
@@ -94,19 +94,19 @@ func validate() -> DotResult:
 		# Legal, and worth naming: this is a server where a spectator can only ever
 		# watch their own side, which is a defensible competitive choice and a
 		# surprising default to arrive at by accident.
-		DotLog.debug(
+		GSLog.debug(
 			"team.spectate",
 			"nobody may ever watch the other side, in any state",
 			{}
 		)
 
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 # --- Presets ----------------------------------------------------------------
 
 ## Dead players see their own side; spectators see everybody; open after the round.
-static func competitive() -> DotTeamSpectateRules:
+static func competitive() -> GSTeamSpectateRules:
 	# Not this class's own name. A script that names itself in an expression, loaded after
 	# its base, cuts Godot 4.7.2's exit teardown short and leaks every script loaded before
 	# it. See docs/gdscript-hazards.md, "A script that names itself".
@@ -114,7 +114,7 @@ static func competitive() -> DotTeamSpectateRules:
 
 
 ## Everybody sees everybody. A casual server, a practice range, a demo.
-static func open() -> DotTeamSpectateRules:
+static func open() -> GSTeamSpectateRules:
 	var r := new()
 	r.dead_see_enemies = true
 	r.spectators_see_everybody = true
@@ -125,7 +125,7 @@ static func open() -> DotTeamSpectateRules:
 ## Nobody sees the other side, ever, including spectators.
 ##
 ## For a tournament server where a spectator seat is a seat in the room.
-static func locked() -> DotTeamSpectateRules:
+static func locked() -> GSTeamSpectateRules:
 	var r := new()
 	r.spectators_see_everybody = false
 	r.dead_see_enemies = false
@@ -141,7 +141,7 @@ static func presets() -> Dictionary:
 	}
 
 
-static func preset(p_id: StringName) -> DotTeamSpectateRules:
+static func preset(p_id: StringName) -> GSTeamSpectateRules:
 	var table := presets()
 
 	if not table.has(p_id):

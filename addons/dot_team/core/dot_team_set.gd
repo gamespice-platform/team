@@ -1,5 +1,5 @@
 @tool
-class_name DotTeamSet
+class_name GSTeamSet
 extends Resource
 
 ## The sides a session has, in order, with the presets that cover most games.
@@ -14,25 +14,25 @@ const SPECTATOR := &"spectator"
 
 @export var id: StringName = &""
 
-@export var teams: Array[DotTeamDef] = []
+@export var teams: Array[GSTeamDef] = []
 
 var _by_id: Dictionary = {}
 var _built: bool = false
 
 
-func build() -> DotResult:
+func build() -> GSResult:
 	_by_id.clear()
 
 	if teams.is_empty():
-		return DotResult.fail(DotError.CODE_INVALID, "A team set with no teams.")
+		return GSResult.fail(GSError.CODE_INVALID, "A team set with no teams.")
 
 	for t in teams:
 		if t == null or t.id == &"":
-			return DotResult.fail(DotError.CODE_INVALID, "A team with no id.")
+			return GSResult.fail(GSError.CODE_INVALID, "A team with no id.")
 
 		if _by_id.has(t.id):
-			return DotResult.fail(
-				DotError.CODE_INVALID,
+			return GSResult.fail(
+				GSError.CODE_INVALID,
 				"Two teams are called '%s'." % String(t.id),
 				"Every lookup would answer about the second one, silently."
 			)
@@ -40,22 +40,22 @@ func build() -> DotResult:
 		_by_id[t.id] = t
 
 	if playing_teams().is_empty():
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"No team in this set plays.",
 			"A round whose only sides are spectators cannot end: nobody can be "
 			+ "eliminated and nobody can score."
 		)
 
 	_built = true
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 func _ensure_built() -> void:
 	if not _built or _by_id.size() != teams.size():
 		var res := build()
 		if not res.ok:
-			DotLog.error(CHANNEL, "team set unusable", {"why": res.error.message})
+			GSLog.error(CHANNEL, "team set unusable", {"why": res.error.message})
 
 
 func has_team(team_id: StringName) -> bool:
@@ -63,14 +63,14 @@ func has_team(team_id: StringName) -> bool:
 	return _by_id.has(team_id)
 
 
-func get_team(team_id: StringName) -> DotTeamDef:
+func get_team(team_id: StringName) -> GSTeamDef:
 	_ensure_built()
 	return _by_id.get(team_id, null)
 
 
 ## Every side that actually plays, in declared order.
-func playing_teams() -> Array[DotTeamDef]:
-	var out: Array[DotTeamDef] = []
+func playing_teams() -> Array[GSTeamDef]:
+	var out: Array[GSTeamDef] = []
 
 	for t in teams:
 		if t != null and t.playing:
@@ -128,10 +128,10 @@ func display_of(team_id: StringName) -> String:
 
 
 ## The sides in scoreboard order: sort_order, then id, with non-playing last.
-func sorted_teams() -> Array[DotTeamDef]:
+func sorted_teams() -> Array[GSTeamDef]:
 	var out := teams.duplicate()
 
-	out.sort_custom(func(a: DotTeamDef, b: DotTeamDef) -> bool:
+	out.sort_custom(func(a: GSTeamDef, b: GSTeamDef) -> bool:
 		if a.playing != b.playing:
 			return a.playing
 		if a.sort_order != b.sort_order:
@@ -139,9 +139,9 @@ func sorted_teams() -> Array[DotTeamDef]:
 		return String(a.id) < String(b.id)
 	)
 
-	var typed: Array[DotTeamDef] = []
+	var typed: Array[GSTeamDef] = []
 	for t: Variant in out:
-		typed.append(t as DotTeamDef)
+		typed.append(t as GSTeamDef)
 
 	return typed
 
@@ -159,7 +159,7 @@ func describe_lines() -> PackedStringArray:
 
 
 func describe() -> String:
-	return "DotTeamSet(%s, %d teams)" % [String(id), teams.size()]
+	return "GSTeamSet(%s, %d teams)" % [String(id), teams.size()]
 
 
 func _to_string() -> String:
@@ -177,13 +177,13 @@ func _to_string() -> String:
 static func standard_pair(
 	a: StringName = &"blue",
 	b: StringName = &"red"
-) -> DotTeamSet:
-	var set := DotTeamSet.new()
+) -> GSTeamSet:
+	var set := GSTeamSet.new()
 	set.id = &"pair"
 	set.teams = [
 		_holding_pen(),
-		DotTeamDef.make(a, String(a).capitalize(), Color(0.35, 0.55, 0.95)),
-		DotTeamDef.make(b, String(b).capitalize(), Color(0.90, 0.35, 0.30)),
+		GSTeamDef.make(a, String(a).capitalize(), Color(0.35, 0.55, 0.95)),
+		GSTeamDef.make(b, String(b).capitalize(), Color(0.90, 0.35, 0.30)),
 		_spectators(),
 	]
 	set.teams[1].sort_order = 1
@@ -197,11 +197,11 @@ static func standard_pair(
 ## Free-for-all is not "no teams": it is one team, with friendly fire on. Modelling it
 ## as no teams means every consumer branches on whether teams exist, and the branch
 ## nobody wrote is the one that matters.
-static func free_for_all() -> DotTeamSet:
-	var set := DotTeamSet.new()
+static func free_for_all() -> GSTeamSet:
+	var set := GSTeamSet.new()
 	set.id = &"ffa"
 
-	var all := DotTeamDef.make(&"players", "Players", Color(0.85, 0.85, 0.85))
+	var all := GSTeamDef.make(&"players", "Players", Color(0.85, 0.85, 0.85))
 	all.friendly_fire = true
 	all.sort_order = 1
 
@@ -214,7 +214,7 @@ static func free_for_all() -> DotTeamSet:
 static func attack_defend(
 	attackers: StringName = &"attackers",
 	defenders: StringName = &"defenders"
-) -> DotTeamSet:
+) -> GSTeamSet:
 	var set := standard_pair(attackers, defenders)
 	set.id = &"attack_defend"
 	set.get_team(attackers).attributes = {"attacks": true}
@@ -263,15 +263,15 @@ static func palette_name(index: int) -> String:
 
 
 ## Four sides, for a squad mode or a large objective map.
-static func four_way() -> DotTeamSet:
-	var set := DotTeamSet.new()
+static func four_way() -> GSTeamSet:
+	var set := GSTeamSet.new()
 	set.id = &"four_way"
 	set.teams = [
 		_holding_pen(),
-		DotTeamDef.make(&"blue", "Blue", Color(0.35, 0.55, 0.95)),
-		DotTeamDef.make(&"red", "Red", Color(0.90, 0.35, 0.30)),
-		DotTeamDef.make(&"green", "Green", Color(0.35, 0.80, 0.45)),
-		DotTeamDef.make(&"yellow", "Yellow", Color(0.95, 0.82, 0.30)),
+		GSTeamDef.make(&"blue", "Blue", Color(0.35, 0.55, 0.95)),
+		GSTeamDef.make(&"red", "Red", Color(0.90, 0.35, 0.30)),
+		GSTeamDef.make(&"green", "Green", Color(0.35, 0.80, 0.45)),
+		GSTeamDef.make(&"yellow", "Yellow", Color(0.95, 0.82, 0.30)),
 		_spectators(),
 	]
 
@@ -282,15 +282,15 @@ static func four_way() -> DotTeamSet:
 	return set
 
 
-static func _holding_pen() -> DotTeamDef:
-	var t := DotTeamDef.make(UNASSIGNED, "Unassigned", Color(0.6, 0.6, 0.6), false)
+static func _holding_pen() -> GSTeamDef:
+	var t := GSTeamDef.make(UNASSIGNED, "Unassigned", Color(0.6, 0.6, 0.6), false)
 	t.short_name = "—"
 	t.sort_order = 100
 	return t
 
 
-static func _spectators() -> DotTeamDef:
-	var t := DotTeamDef.make(SPECTATOR, "Spectators", Color(0.55, 0.55, 0.65), false)
+static func _spectators() -> GSTeamDef:
+	var t := GSTeamDef.make(SPECTATOR, "Spectators", Color(0.55, 0.55, 0.65), false)
 	t.short_name = "SPEC"
 	t.sort_order = 101
 	return t
@@ -298,18 +298,18 @@ static func _spectators() -> DotTeamDef:
 
 static func presets() -> Dictionary:
 	return {
-		&"pair": Callable(DotTeamSet, "standard_pair"),
-		&"ffa": Callable(DotTeamSet, "free_for_all"),
-		&"attack_defend": Callable(DotTeamSet, "attack_defend"),
-		&"four_way": Callable(DotTeamSet, "four_way"),
+		&"pair": Callable(GSTeamSet, "standard_pair"),
+		&"ffa": Callable(GSTeamSet, "free_for_all"),
+		&"attack_defend": Callable(GSTeamSet, "attack_defend"),
+		&"four_way": Callable(GSTeamSet, "four_way"),
 	}
 
 
-static func preset(p_id: StringName) -> DotTeamSet:
+static func preset(p_id: StringName) -> GSTeamSet:
 	var table := presets()
 
 	if not table.has(p_id):
 		return null
 
 	var fn: Callable = table[p_id]
-	return fn.call() as DotTeamSet
+	return fn.call() as GSTeamSet

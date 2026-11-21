@@ -1,13 +1,13 @@
-class_name DotTeamBlockCommands
+class_name GSTeamBlockCommands
 extends RefCounted
 
-## `!block`/`!noblock [team|enemy|all]` and `!block reset` over [DotTeamBlockRules]; the host
-## has `add_command` or `command` (duck-typed like `DotVoteCommands`). Who may: `mp_blockcmd`.
+## `!block`/`!noblock [team|enemy|all]` and `!block reset` over [GSTeamBlockRules]; the host
+## has `add_command` or `command` (duck-typed like `GSVoteCommands`). Who may: `mp_blockcmd`.
 
 const CHANNEL := "team.block.commands"
 const DEFAULTS := {"block": "block", "noblock": "noblock"}
 
-var rules: DotTeamBlockRules
+var rules: GSTeamBlockRules
 var prefix: String = ""
 var names: Dictionary = {}
 
@@ -21,31 +21,31 @@ var applied_fn: Callable = Callable()
 var registered: PackedStringArray = PackedStringArray()
 
 
-func _init(p_rules: DotTeamBlockRules = null) -> void:
+func _init(p_rules: GSTeamBlockRules = null) -> void:
 	rules = p_rules
 
 
-func install(host: Object) -> DotResult:
+func install(host: Object) -> GSResult:
 	if host == null or rules == null:
-		return DotResult.fail(DotError.CODE_INVALID, "A host and rules are both needed.")
+		return GSResult.fail(GSError.CODE_INVALID, "A host and rules are both needed.")
 	var adder := "add_command" if host.has_method("add_command") else ("command" if host.has_method("command") else "")
 	if adder == "":
-		return DotResult.fail(DotError.CODE_UNSUPPORTED, "That host has no way to register a command.")
+		return GSResult.fail(GSError.CODE_UNSUPPORTED, "That host has no way to register a command.")
 	var table := {
 		"block": [func(ctx: Object) -> void: _run(ctx, 1), "Block teammates (or enemies) again: [team|enemy|all|reset]"],
 		"noblock": [func(ctx: Object) -> void: _run(ctx, 0), "Walk through teammates (or enemies): [team|enemy|all]"],
 	}
 	for role: String in table:
-		for full in DotCommandNames.all_of(prefix, names, DEFAULTS, role):
-			if not DotCommandNames.available(host, full, registered, role, "team"):
+		for full in GSCommandNames.all_of(prefix, names, DEFAULTS, role):
+			if not GSCommandNames.available(host, full, registered, role, "team"):
 				continue
 			var entry: Array = table[role]
 			var command: Variant = host.call(adder, full, entry[0], entry[1], "")
 			if command is Object and (command as Object).has_method("with_chat"):
 				(command as Object).call("with_chat")
 			registered.append(full)
-	DotLog.info(CHANNEL, "commands registered", {"count": registered.size()})
-	return DotResult.success(registered)
+	GSLog.info(CHANNEL, "commands registered", {"count": registered.size()})
+	return GSResult.success(registered)
 
 
 func _run(ctx: Object, want: int) -> void:
@@ -61,13 +61,13 @@ func _run(ctx: Object, want: int) -> void:
 	var block := want
 	match word:
 		"", "all":
-			relations = [DotTeamBlockRules.Relation.TEAM, DotTeamBlockRules.Relation.ENEMY]
+			relations = [GSTeamBlockRules.Relation.TEAM, GSTeamBlockRules.Relation.ENEMY]
 		"team", "teammates", "friends":
-			relations = [DotTeamBlockRules.Relation.TEAM]
+			relations = [GSTeamBlockRules.Relation.TEAM]
 		"enemy", "enemies":
-			relations = [DotTeamBlockRules.Relation.ENEMY]
+			relations = [GSTeamBlockRules.Relation.ENEMY]
 		"reset", "default":
-			relations = [DotTeamBlockRules.Relation.TEAM, DotTeamBlockRules.Relation.ENEMY]
+			relations = [GSTeamBlockRules.Relation.TEAM, GSTeamBlockRules.Relation.ENEMY]
 			block = -1
 		_:
 			ctx.call("reply", "Usage: [team|enemy|all|reset]")
@@ -87,7 +87,7 @@ func _run(ctx: Object, want: int) -> void:
 		return
 	if applied_fn.is_valid():
 		applied_fn.call(key)
-	var what := "teammates and enemies" if relations.size() > 1 else ("teammates" if relations[0] == DotTeamBlockRules.Relation.TEAM else "enemies")
+	var what := "teammates and enemies" if relations.size() > 1 else ("teammates" if relations[0] == GSTeamBlockRules.Relation.TEAM else "enemies")
 	var scope := " (your whole team)" if rules.config.scope == 1 else ""
 	var line := "The server's rule applies to %s again." % what
 	if block == 1:

@@ -22,7 +22,7 @@ var _live := true
 
 
 func _ready() -> void:
-	DotLog.set_level(DotLog.Level.ERROR)
+	GSLog.set_level(GSLog.Level.ERROR)
 	_run()
 
 
@@ -57,10 +57,10 @@ func _run() -> void:
 	get_tree().quit(1 if _failed > 0 else 0)
 
 
-func _teams_roster() -> DotTeamRoster:
-	var r := DotTeamRoster.new()
-	r.teams = DotTeamSet.standard_pair()
-	r.policy = DotTeamPolicy.new()
+func _teams_roster() -> GSTeamRoster:
+	var r := GSTeamRoster.new()
+	r.teams = GSTeamSet.standard_pair()
+	r.policy = GSTeamPolicy.new()
 	r.policy.enforce_balance_on_switch = false
 	r.register_service = false
 	r.alive_fn = func(key: String) -> bool: return bool(_alive.get(key, false))
@@ -70,12 +70,12 @@ func _teams_roster() -> DotTeamRoster:
 
 
 func _spectate(
-	teams: DotTeamRoster,
-	rules: DotTeamSpectateRules = null
-) -> DotTeamSpectate:
-	var s := DotTeamSpectate.new()
+	teams: GSTeamRoster,
+	rules: GSTeamSpectateRules = null
+) -> GSTeamSpectate:
+	var s := GSTeamSpectate.new()
 	s.teams = teams
-	s.rules = rules if rules != null else DotTeamSpectateRules.new()
+	s.rules = rules if rules != null else GSTeamSpectateRules.new()
 	s.register_service = false
 
 	# Free camera and no delay: this suite is about who may watch whom, and a
@@ -84,7 +84,7 @@ func _spectate(
 	# GameSpice Spectate is linked into THIS project so the suite runs against the real
 	# manager rather than a stand-in — the addon itself never names it, which is the
 	# thing the "no manager at all" section below checks.
-	var sr := DotSpectatorRules.new()
+	var sr := GSSpectatorRules.new()
 	sr.force_camera = 0
 	sr.delay_ticks = 0
 	sr.allow_while_alive = true
@@ -97,7 +97,7 @@ func _spectate(
 	return s
 
 
-func _populate(teams: DotTeamRoster) -> void:
+func _populate(teams: GSTeamRoster) -> void:
 	_alive.clear()
 
 	for key in ["blue1", "blue2"]:
@@ -116,7 +116,7 @@ func _populate(teams: DotTeamRoster) -> void:
 func _test_rules() -> void:
 	_section("rules")
 
-	var r := DotTeamSpectateRules.new()
+	var r := GSTeamSpectateRules.new()
 	_check(r.validate().ok, "the defaults validate")
 	_check(
 		r.spectators_see_everybody,
@@ -130,27 +130,27 @@ func _test_rules() -> void:
 	)
 	_check(r.open_after_round, "and everything opens up once the round is decided")
 
-	var nameless := DotTeamSpectateRules.new()
+	var nameless := GSTeamSpectateRules.new()
 	nameless.spectator_team = &""
 	_check(
 		not nameless.validate().ok,
 		"a rules set with no spectator side is refused: nobody could be moved to one"
 	)
 
-	_check(DotTeamSpectateRules.open().dead_see_enemies, "the open preset lets the dead look")
+	_check(GSTeamSpectateRules.open().dead_see_enemies, "the open preset lets the dead look")
 	_check(
-		not DotTeamSpectateRules.locked().spectators_see_everybody,
+		not GSTeamSpectateRules.locked().spectators_see_everybody,
 		"and the locked one does not, even for spectators"
 	)
-	_check(DotTeamSpectateRules.presets().size() == 3, "three presets")
-	_check(DotTeamSpectateRules.preset(&"open") != null, "resolving by name")
+	_check(GSTeamSpectateRules.presets().size() == 3, "three presets")
+	_check(GSTeamSpectateRules.preset(&"open") != null, "resolving by name")
 	_check(r.env_prefix() == "DOT_TEAM_SPECTATE_", "with the family's config layering")
 
 
 func _test_setup() -> void:
 	_section("setup")
 
-	var bare := DotTeamSpectate.new()
+	var bare := GSTeamSpectate.new()
 	bare.register_service = false
 	add_child(bare)
 	_check(
@@ -159,16 +159,16 @@ func _test_setup() -> void:
 		+ "the bridge"
 	)
 
-	var ffa := DotTeamRoster.new()
-	ffa.teams = DotTeamSet.free_for_all()
-	ffa.policy = DotTeamPolicy.free_for_all()
+	var ffa := GSTeamRoster.new()
+	ffa.teams = GSTeamSet.free_for_all()
+	ffa.policy = GSTeamPolicy.free_for_all()
 	ffa.register_service = false
 	add_child(ffa)
 	var _fr := ffa.setup()
 
-	var no_side := DotTeamSpectate.new()
+	var no_side := GSTeamSpectate.new()
 	no_side.teams = ffa
-	no_side.rules = DotTeamSpectateRules.new()
+	no_side.rules = GSTeamSpectateRules.new()
 	no_side.rules.spectator_team = &"nonexistent"
 	no_side.register_service = false
 	add_child(no_side)
@@ -206,12 +206,12 @@ func _test_bridge() -> void:
 		"the playing sides map to one and two"
 	)
 	_check(
-		s.team_index(DotTeamSet.SPECTATOR) == 0,
+		s.team_index(GSTeamSet.SPECTATOR) == 0,
 		"and the spectator side maps to zero — which is exactly what dot-spectate's "
 		+ "force-camera rule means by 'no team', so that rule does the right thing "
 		+ "without being told anything about dot-team"
 	)
-	_check(s.team_index(DotTeamSet.UNASSIGNED) == 0, "and so does the holding pen")
+	_check(s.team_index(GSTeamSet.UNASSIGNED) == 0, "and so does the holding pen")
 	_check(s.team_index(&"nonsense") == 0, "and an unknown side")
 
 	_check(s.team_of_index(1) == &"blue", "and the mapping reverses")
@@ -226,7 +226,7 @@ func _test_bridge() -> void:
 	var participants := s.spectators.participants_fn.call() as PackedStringArray
 	_check(participants.size() == 4, "the participant list is everybody playing")
 
-	var _spec := teams.force_team("red2", DotTeamSet.SPECTATOR)
+	var _spec := teams.force_team("red2", GSTeamSet.SPECTATOR)
 	var fewer := s.spectators.participants_fn.call() as PackedStringArray
 	_check(
 		fewer.size() == 3,
@@ -266,7 +266,7 @@ func _test_policy() -> void:
 	_live = true
 
 	# A spectator.
-	var _sp := teams.force_team("blue1", DotTeamSet.SPECTATOR)
+	var _sp := teams.force_team("blue1", GSTeamSet.SPECTATOR)
 	_check(s.may_watch("blue1", "red1").ok, "a spectator may watch anybody")
 
 	s.rules.spectators_see_everybody = false
@@ -300,7 +300,7 @@ func _test_policy() -> void:
 	)
 
 	# Non-playing targets.
-	var _spec2 := teams.force_team("red2", DotTeamSet.SPECTATOR)
+	var _spec2 := teams.force_team("red2", GSTeamSet.SPECTATOR)
 	_check(
 		not s.may_watch("blue1", "red2").ok,
 		"nobody watches a spectator, because there is nothing to see"
@@ -443,7 +443,7 @@ func _test_api() -> void:
 
 ## Anything with the right methods is a spectator manager, including this.
 ##
-## GameSpice Team names no `DotSpectator*` identifier anywhere, so a game with its own camera
+## GameSpice Team names no `GSSpectator*` identifier anywhere, so a game with its own camera
 ## system — or with GameSpice Spectate absent entirely — still gets the side policy. This is
 ## that promise, tested rather than asserted in a comment.
 class StubManager extends Node:
@@ -457,24 +457,24 @@ class StubManager extends Node:
 	var watching: Dictionary = {}
 	var advanced: int = -1
 
-	func setup() -> DotResult:
-		return DotResult.success(null)
+	func setup() -> GSResult:
+		return GSResult.success(null)
 
 	func is_spectating(key: String) -> bool:
 		return watching.has(key)
 
-	func may_spectate(_key: String) -> DotResult:
-		return DotResult.success(null)
+	func may_spectate(_key: String) -> GSResult:
+		return GSResult.success(null)
 
-	func may_watch(key: String, target: String) -> DotResult:
+	func may_watch(key: String, target: String) -> GSResult:
 		if target_filter.is_valid() and not bool(target_filter.call(key, target)):
-			return DotResult.fail(DotError.CODE_FORBIDDEN, "The side policy says no.")
+			return GSResult.fail(GSError.CODE_FORBIDDEN, "The side policy says no.")
 
-		return DotResult.success(null)
+		return GSResult.success(null)
 
-	func watch(key: String, target: String) -> DotResult:
+	func watch(key: String, target: String) -> GSResult:
 		watching[key] = target
-		return DotResult.success(null)
+		return GSResult.success(null)
 
 	func stop(key: String) -> void:
 		watching.erase(key)
@@ -505,10 +505,10 @@ func _test_duck_typing() -> void:
 	_populate(teams)
 
 	var stub := StubManager.new()
-	var s := DotTeamSpectate.new()
+	var s := GSTeamSpectate.new()
 	s.teams = teams
 	s.register_service = false
-	s.rules = DotTeamSpectateRules.new()
+	s.rules = GSTeamSpectateRules.new()
 	s.alive_fn = func(key: String) -> bool: return bool(_alive.get(key, false))
 	s.round_live_fn = func() -> bool: return _live
 	s.spectators = stub
@@ -518,7 +518,7 @@ func _test_duck_typing() -> void:
 	_check(
 		stub.participants_fn.is_valid(),
 		"and gets the participant list wired into it — dot-team names no "
-		+ "DotSpectator* identifier anywhere, so a game with its own camera system gets "
+		+ "GSSpectator* identifier anywhere, so a game with its own camera system gets "
 		+ "the side policy for free"
 	)
 	_check(stub.team_fn.is_valid(), "and the side lookup")
@@ -538,10 +538,10 @@ func _test_duck_typing() -> void:
 	_check(not s.is_spectating("blue1"), "and stopping stops")
 
 	# No manager at all, which is what a lobby with no GameSpice Spectate looks like.
-	var bare := DotTeamSpectate.new()
+	var bare := GSTeamSpectate.new()
 	bare.teams = teams
 	bare.register_service = false
-	bare.rules = DotTeamSpectateRules.new()
+	bare.rules = GSTeamSpectateRules.new()
 	add_child(bare)
 	bare.spectators = null
 

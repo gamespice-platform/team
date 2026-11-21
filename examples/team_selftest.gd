@@ -22,7 +22,7 @@ var _live := false
 
 
 func _ready() -> void:
-	DotLog.set_level(DotLog.Level.ERROR)
+	GSLog.set_level(GSLog.Level.ERROR)
 	_run()
 
 
@@ -61,10 +61,10 @@ func _run() -> void:
 	get_tree().quit(1 if _failed > 0 else 0)
 
 
-func _roster(set: DotTeamSet = null, policy: DotTeamPolicy = null) -> DotTeamRoster:
-	var r := DotTeamRoster.new()
-	r.teams = set if set != null else DotTeamSet.standard_pair()
-	r.policy = policy if policy != null else DotTeamPolicy.new()
+func _roster(set: GSTeamSet = null, policy: GSTeamPolicy = null) -> GSTeamRoster:
+	var r := GSTeamRoster.new()
+	r.teams = set if set != null else GSTeamSet.standard_pair()
+	r.policy = policy if policy != null else GSTeamPolicy.new()
 	r.policy.tick_rate = RATE
 	r.register_service = false
 	r.alive_fn = func(key: String) -> bool: return bool(_alive.get(key, false))
@@ -79,7 +79,7 @@ func _roster(set: DotTeamSet = null, policy: DotTeamPolicy = null) -> DotTeamRos
 func _test_defs() -> void:
 	_section("a team definition")
 
-	var t := DotTeamDef.make(&"blue", "Blue", Color.BLUE)
+	var t := GSTeamDef.make(&"blue", "Blue", Color.BLUE)
 	_check(t.id == &"blue", "has an id")
 	_check(t.display_name == "Blue", "and a name")
 	_check(t.playing, "and plays by default")
@@ -97,10 +97,10 @@ func _test_defs() -> void:
 	_check(
 		not t.attribute_is("attacks", "true"),
 		"a string against a bool answers false rather than erroring, because "
-		+ "DotValue.same is total where == is not"
+		+ "GSValue.same is total where == is not"
 	)
 
-	var auto := DotTeamDef.make(&"green")
+	var auto := GSTeamDef.make(&"green")
 	_check(auto.display_name == "Green", "a name is derived when none is given")
 	_check(auto.short_name == "GRE", "and a short one too")
 	_check(t.describe().contains("blue"), "and it describes itself")
@@ -109,15 +109,15 @@ func _test_defs() -> void:
 func _test_sets() -> void:
 	_section("a team set")
 
-	var pair := DotTeamSet.standard_pair()
+	var pair := GSTeamSet.standard_pair()
 	_check(pair.build().ok, "the standard pair builds")
-	_check(DotTeamSet.palette_name(0) == "Red" and DotTeamSet.palette_colour(0) == DotTeamSet.PALETTE_COLOURS[0],
+	_check(GSTeamSet.palette_name(0) == "Red" and GSTeamSet.palette_colour(0) == GSTeamSet.PALETTE_COLOURS[0],
 		"the palette's first team is red")
-	_check(DotTeamSet.palette_name(6) == "Team 7" and DotTeamSet.palette_name(99) == "Team 100",
+	_check(GSTeamSet.palette_name(6) == "Team 7" and GSTeamSet.palette_name(99) == "Team 100",
 		"past six teams the names are made, for any count")
-	_check(DotTeamSet.palette_colour(6) != DotTeamSet.palette_colour(5)
-		and DotTeamSet.palette_colour(7) != DotTeamSet.palette_colour(6), "and so are the colours, each its own")
-	_check(DotTeamSet.palette_name(-1) == "Nobody" and DotTeamSet.palette_colour(-1) == DotTeamSet.PALETTE_NOBODY,
+	_check(GSTeamSet.palette_colour(6) != GSTeamSet.palette_colour(5)
+		and GSTeamSet.palette_colour(7) != GSTeamSet.palette_colour(6), "and so are the colours, each its own")
+	_check(GSTeamSet.palette_name(-1) == "Nobody" and GSTeamSet.palette_colour(-1) == GSTeamSet.PALETTE_NOBODY,
 		"no team is nobody, in grey")
 	_check(
 		pair.teams.size() == 4,
@@ -127,13 +127,13 @@ func _test_sets() -> void:
 	)
 	_check(pair.playing_teams().size() == 2, "of which two play")
 	_check(pair.is_playing(&"blue"), "blue plays")
-	_check(not pair.is_playing(DotTeamSet.SPECTATOR), "spectators do not")
-	_check(not pair.is_playing(DotTeamSet.UNASSIGNED), "and neither does the holding pen")
+	_check(not pair.is_playing(GSTeamSet.SPECTATOR), "spectators do not")
+	_check(not pair.is_playing(GSTeamSet.UNASSIGNED), "and neither does the holding pen")
 
 	_check(pair.are_enemies(&"blue", &"red"), "the two sides are enemies")
 	_check(not pair.are_enemies(&"blue", &"blue"), "a side is not its own enemy")
 	_check(
-		not pair.are_enemies(&"blue", DotTeamSet.SPECTATOR),
+		not pair.are_enemies(&"blue", GSTeamSet.SPECTATOR),
 		"and a spectator is nobody's enemy — the spelling 'is their team not my team' "
 		+ "makes them everybody's"
 	)
@@ -150,7 +150,7 @@ func _test_sets() -> void:
 		+ "the spectators"
 	)
 
-	var ffa := DotTeamSet.free_for_all()
+	var ffa := GSTeamSet.free_for_all()
 	_check(ffa.playing_teams().size() == 1, "free-for-all is one playing side")
 	_check(
 		ffa.get_team(&"players").friendly_fire,
@@ -158,40 +158,40 @@ func _test_sets() -> void:
 		+ "consumer branch on whether teams exist"
 	)
 
-	var ad := DotTeamSet.attack_defend()
+	var ad := GSTeamSet.attack_defend()
 	_check(bool(ad.get_team(&"attackers").attribute("attacks", false)), "attackers attack")
 	_check(not bool(ad.get_team(&"defenders").attribute("attacks", false)), "defenders do not")
 
-	_check(DotTeamSet.four_way().playing_teams().size() == 4, "four-way has four")
-	_check(DotTeamSet.presets().size() == 4, "there are four presets")
-	_check(DotTeamSet.preset(&"ffa") != null, "resolving by name")
-	_check(DotTeamSet.preset(&"nope") == null, "and nothing for a name that is not one")
+	_check(GSTeamSet.four_way().playing_teams().size() == 4, "four-way has four")
+	_check(GSTeamSet.presets().size() == 4, "there are four presets")
+	_check(GSTeamSet.preset(&"ffa") != null, "resolving by name")
+	_check(GSTeamSet.preset(&"nope") == null, "and nothing for a name that is not one")
 
-	var dup := DotTeamSet.new()
-	dup.teams = [DotTeamDef.make(&"a"), DotTeamDef.make(&"a")]
+	var dup := GSTeamSet.new()
+	dup.teams = [GSTeamDef.make(&"a"), GSTeamDef.make(&"a")]
 	_check(not dup.build().ok, "two teams with one name are refused")
 
-	var nobody := DotTeamSet.new()
-	nobody.teams = [DotTeamDef.make(&"spec", "Spectators", Color.GRAY, false)]
+	var nobody := GSTeamSet.new()
+	nobody.teams = [GSTeamDef.make(&"spec", "Spectators", Color.GRAY, false)]
 	_check(
 		not nobody.build().ok,
 		"a set where nothing plays is refused: a round whose only sides are spectators "
 		+ "cannot end"
 	)
 
-	_check(not DotTeamSet.new().build().ok, "and so is an empty one")
+	_check(not GSTeamSet.new().build().ok, "and so is an empty one")
 	_check(pair.describe_lines().size() == 5, "a set describes itself")
 
 
 func _test_policy() -> void:
 	_section("policy")
 
-	var p := DotTeamPolicy.new()
+	var p := GSTeamPolicy.new()
 	_check(p.validate().ok, "the defaults validate")
 	_check(p.max_difference == 1, "allowing one player of difference")
 	_check(p.switch_cooldown_ticks() == 30 * 60, "with a thirty-second cooldown")
 
-	var zero := DotTeamPolicy.new()
+	var zero := GSTeamPolicy.new()
 	zero.max_difference = 0
 	_check(
 		not zero.validate().ok,
@@ -199,20 +199,20 @@ func _test_policy() -> void:
 		+ "so every join past the first odd one bounces and the server looks full"
 	)
 
-	var stuck := DotTeamPolicy.new()
+	var stuck := GSTeamPolicy.new()
 	stuck.allow_choice = false
 	stuck.auto_assign = false
 	_check(not stuck.validate().ok, "and so is a policy where nobody ever gets a side")
 
-	_check(DotTeamPolicy.casual().autobalance == false, "casual does not rebalance")
-	_check(DotTeamPolicy.competitive().lock_when_live, "competitive locks during a round")
+	_check(GSTeamPolicy.casual().autobalance == false, "casual does not rebalance")
+	_check(GSTeamPolicy.competitive().lock_when_live, "competitive locks during a round")
 	_check(
-		not DotTeamPolicy.competitive().allow_switch_while_alive,
+		not GSTeamPolicy.competitive().allow_switch_while_alive,
 		"and does not let a living player move, which is a teleport or an escape"
 	)
-	_check(DotTeamPolicy.free_for_all().allow_switch == false, "free-for-all has nowhere to go")
-	_check(DotTeamPolicy.presets().size() == 3, "three presets")
-	_check(DotTeamPolicy.preset(&"casual") != null, "resolving by name")
+	_check(GSTeamPolicy.free_for_all().allow_switch == false, "free-for-all has nowhere to go")
+	_check(GSTeamPolicy.presets().size() == 3, "three presets")
+	_check(GSTeamPolicy.preset(&"casual") != null, "resolving by name")
 	_check(p.env_prefix() == "DOT_TEAM_", "and the config layers the family's way")
 
 
@@ -223,45 +223,45 @@ func _test_balance_maths() -> void:
 
 	var order: Array[StringName] = [&"blue", &"red"]
 
-	_check(DotTeamBalance.smallest({"blue": 3, "red": 1}, order) == &"red", "smallest is smallest")
-	_check(DotTeamBalance.largest({"blue": 3, "red": 1}, order) == &"blue", "largest is largest")
+	_check(GSTeamBalance.smallest({"blue": 3, "red": 1}, order) == &"red", "smallest is smallest")
+	_check(GSTeamBalance.largest({"blue": 3, "red": 1}, order) == &"blue", "largest is largest")
 	_check(
-		DotTeamBalance.smallest({"blue": 2, "red": 2}, order) == &"blue",
+		GSTeamBalance.smallest({"blue": 2, "red": 2}, order) == &"blue",
 		"a tie resolves to the first in the declared order, deterministically — a "
 		+ "client previewing which side it will land on and a server deciding must agree"
 	)
-	_check(DotTeamBalance.spread({"blue": 5, "red": 1}, order) == 4, "spread is the difference")
-	_check(DotTeamBalance.spread({}, order) == 0, "an empty session has no spread")
-	_check(DotTeamBalance.balanced({"blue": 3, "red": 2}, order, 1), "one apart is balanced")
-	_check(not DotTeamBalance.balanced({"blue": 4, "red": 2}, order, 1), "two apart is not")
+	_check(GSTeamBalance.spread({"blue": 5, "red": 1}, order) == 4, "spread is the difference")
+	_check(GSTeamBalance.spread({}, order) == 0, "an empty session has no spread")
+	_check(GSTeamBalance.balanced({"blue": 3, "red": 2}, order, 1), "one apart is balanced")
+	_check(not GSTeamBalance.balanced({"blue": 4, "red": 2}, order, 1), "two apart is not")
 
 	_check(
-		DotTeamBalance.would_unbalance({"blue": 3, "red": 3}, order, &"blue", 1) == false,
+		GSTeamBalance.would_unbalance({"blue": 3, "red": 3}, order, &"blue", 1) == false,
 		"joining an even pair is fine"
 	)
 	_check(
-		DotTeamBalance.would_unbalance({"blue": 4, "red": 3}, order, &"blue", 1),
+		GSTeamBalance.would_unbalance({"blue": 4, "red": 3}, order, &"blue", 1),
 		"joining the bigger side of an uneven one is not"
 	)
 
-	var plan := DotTeamBalance.moves_to_balance({"blue": 6, "red": 2}, order, 1)
+	var plan := GSTeamBalance.moves_to_balance({"blue": 6, "red": 2}, order, 1)
 	_check(plan.size() == 2, "six against two needs two moves")
 	_check(
 		plan[0]["from"] == &"blue" and plan[0]["to"] == &"red",
 		"from the big side to the small one"
 	)
-	var big := DotTeamBalance.moves_to_balance({"blue": 1000, "red": 0}, order, 1)
+	var big := GSTeamBalance.moves_to_balance({"blue": 1000, "red": 0}, order, 1)
 	_check(big.size() == 500, "a thousand against none is five hundred moves, not cut at 256")
 	_check(
-		DotTeamBalance.moves_to_balance({"blue": 3, "red": 3}, order, 1).is_empty(),
+		GSTeamBalance.moves_to_balance({"blue": 3, "red": 3}, order, 1).is_empty(),
 		"and an even session needs none, which is the common case"
 	)
 	_check(
-		DotTeamBalance.moves_to_balance({"blue": 0, "red": 0}, order, 1).is_empty(),
+		GSTeamBalance.moves_to_balance({"blue": 0, "red": 0}, order, 1).is_empty(),
 		"an empty one too"
 	)
 	_check(
-		DotTeamBalance.moves_to_balance({"blue": 4}, order, 1).size() <= 256,
+		GSTeamBalance.moves_to_balance({"blue": 4}, order, 1).size() <= 256,
 		"a count missing a side terminates rather than spinning until the guard trips"
 	)
 
@@ -277,52 +277,52 @@ func _test_victim_selection() -> void:
 	]
 
 	_check(
-		DotTeamBalance.choose_victim(candidates, DotTeamPolicy.Victim.NEWEST, true) == "new",
+		GSTeamBalance.choose_victim(candidates, GSTeamPolicy.Victim.NEWEST, true) == "new",
 		"the newest is the fairest: whoever joined most recently has the least "
 		+ "invested in the side they are on"
 	)
 	_check(
-		DotTeamBalance.choose_victim(candidates, DotTeamPolicy.Victim.OLDEST, true) == "old",
+		GSTeamBalance.choose_victim(candidates, GSTeamPolicy.Victim.OLDEST, true) == "old",
 		"the oldest rule picks the other end"
 	)
 	_check(
-		DotTeamBalance.choose_victim(candidates, DotTeamPolicy.Victim.LOWEST_SCORE, true) == "mid",
+		GSTeamBalance.choose_victim(candidates, GSTeamPolicy.Victim.LOWEST_SCORE, true) == "mid",
 		"the lowest score picks by score"
 	)
 	_check(
-		DotTeamBalance.choose_victim(candidates, DotTeamPolicy.Victim.NEWEST, false) == "new",
+		GSTeamBalance.choose_victim(candidates, GSTeamPolicy.Victim.NEWEST, false) == "new",
 		"and the living are skipped when the policy says so"
 	)
 	_check(
-		DotTeamBalance.choose_victim(candidates, DotTeamPolicy.Victim.LOWEST_SCORE, false) == "new",
+		GSTeamBalance.choose_victim(candidates, GSTeamPolicy.Victim.LOWEST_SCORE, false) == "new",
 		"which changes the answer: 'mid' has the lowest score and is alive"
 	)
 
 	var all_alive: Array[Dictionary] = [{"key": "a", "alive": true}]
 	_check(
-		DotTeamBalance.choose_victim(all_alive, DotTeamPolicy.Victim.NEWEST, false) == "",
+		GSTeamBalance.choose_victim(all_alive, GSTeamPolicy.Victim.NEWEST, false) == "",
 		"nobody eligible answers nothing, which is the right answer for a round where "
 		+ "everybody on the big side is alive"
 	)
 	_check(
-		DotTeamBalance.choose_victim([], DotTeamPolicy.Victim.NEWEST, true) == "",
+		GSTeamBalance.choose_victim([], GSTeamPolicy.Victim.NEWEST, true) == "",
 		"and an empty side has nobody to give up"
 	)
 
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4
 	_check(
-		DotTeamBalance.choose_victim(candidates, DotTeamPolicy.Victim.RANDOM, true, rng) != "",
+		GSTeamBalance.choose_victim(candidates, GSTeamPolicy.Victim.RANDOM, true, rng) != "",
 		"the random rule picks somebody when given a generator"
 	)
 	_check(
-		DotTeamBalance.choose_victim(candidates, DotTeamPolicy.Victim.RANDOM, true) == "new",
+		GSTeamBalance.choose_victim(candidates, GSTeamPolicy.Victim.RANDOM, true) == "new",
 		"and falls back to the newest without one, rather than to something two "
 		+ "machines would disagree about"
 	)
 
 	_check(
-		DotTeamBalance.explain(&"blue", &"red", "ada", 3).contains("ada"),
+		GSTeamBalance.explain(&"blue", &"red", "ada", 3).contains("ada"),
 		"and a move can be explained in one line"
 	)
 
@@ -364,8 +364,8 @@ func _test_membership() -> void:
 	_check(r.are_allies("a", "a"), "and so is everybody with themselves")
 	_check(not r.are_allies("a", "b"), "opponents are not")
 
-	var _spec := r.force_team("c", DotTeamSet.SPECTATOR)
-	_check(r.team_of("c") == DotTeamSet.SPECTATOR, "somebody can be forced to spectate")
+	var _spec := r.force_team("c", GSTeamSet.SPECTATOR)
+	_check(r.team_of("c") == GSTeamSet.SPECTATOR, "somebody can be forced to spectate")
 	_check(
 		not r.are_enemies("a", "c") and not r.are_allies("a", "c"),
 		"and is then neither an enemy nor an ally, which is the whole point of the "
@@ -384,7 +384,7 @@ func _test_membership() -> void:
 	_check(r.describe_lines().size() == 5, "and the roster describes itself")
 
 	# A team with a size limit.
-	var capped := DotTeamSet.standard_pair()
+	var capped := GSTeamSet.standard_pair()
 	capped.get_team(&"blue").max_players = 1
 	var cr := _roster(capped)
 	var _ca := cr.add("x")
@@ -398,7 +398,7 @@ func _test_membership() -> void:
 	capped.get_team(&"red").max_players = 1
 	var _cd := cr.add("w")
 	_check(
-		cr.team_of("w") == DotTeamSet.UNASSIGNED,
+		cr.team_of("w") == GSTeamSet.UNASSIGNED,
 		"and when every playing side is full, the holding pen is the honest answer — "
 		+ "putting somebody on a full team to avoid an awkward return value is how a "
 		+ "five-slot mode ends up with nine players"
@@ -414,7 +414,7 @@ func _test_switching() -> void:
 	_alive.clear()
 	_live = false
 
-	var policy := DotTeamPolicy.new()
+	var policy := GSTeamPolicy.new()
 	policy.switch_cooldown_sec = 10.0
 	# Balance enforcement is checked on its own roster below. Left on here, an even
 	# four-player session refuses every switch and the cooldown checks could not fail.
@@ -494,7 +494,7 @@ func _test_rebalancing() -> void:
 	_section("rebalancing")
 
 	_alive.clear()
-	var policy := DotTeamPolicy.competitive()
+	var policy := GSTeamPolicy.competitive()
 	policy.tick_rate = RATE
 	var r := _roster(null, policy)
 
@@ -566,11 +566,11 @@ func _test_mirror_and_match() -> void:
 	var _a := server.add("a")
 	var _b := server.add("b")
 
-	var client := DotTeamRoster.new()
+	var client := GSTeamRoster.new()
 	client.authoritative = false
 	client.register_service = false
-	client.teams = DotTeamSet.standard_pair()
-	client.policy = DotTeamPolicy.new()
+	client.teams = GSTeamSet.standard_pair()
+	client.policy = GSTeamPolicy.new()
 	add_child(client)
 
 	_check(client.apply_wire(server.to_wire()).ok, "assignments travel")
@@ -611,7 +611,7 @@ func _test_mirror_and_match() -> void:
 	var _late := server.force_team("a", &"red", &"test")
 	_check(int(fake.ticks["a"]) == 99, "and a supplied tick reaches it")
 
-	var _spec := server.force_team("c", DotTeamSet.SPECTATOR)
+	var _spec := server.force_team("c", GSTeamSet.SPECTATOR)
 	_check(
 		fake.assignments.size() == 3,
 		"a move to a non-playing side is not pushed, because dot-match's sides are the "
@@ -632,7 +632,7 @@ func _test_mirror_and_match() -> void:
 	wrong.queue_free()
 
 
-## Stands in for GameSpice Match's DotTeamManager, which this project does not depend on.
+## Stands in for GameSpice Match's GSTeamManager, which this project does not depend on.
 ##
 ## [b]The signature and the id numbering are copied from the real one deliberately.[/b]
 ## GameSpice Match's is `assign(key, tick, team)` and its `standard_pair()` uses ids 1 and 2 —
@@ -645,10 +645,10 @@ class FakeMatch extends Node:
 
 	var teams: Array = [FakeTeam.new(1), FakeTeam.new(2)]
 
-	func assign(key: String, tick: int, team: int) -> DotResult:
+	func assign(key: String, tick: int, team: int) -> GSResult:
 		assignments[key] = team
 		ticks[key] = tick
-		return DotResult.success(null)
+		return GSResult.success(null)
 
 
 class FakeTeam extends RefCounted:
@@ -670,18 +670,18 @@ func _test_menu_server() -> void:
 	var state := {"team": 1, "spectating": false}
 	var now := [100.0]
 	var joins: Array = []
-	var server := DotTeamMenuServer.new()
+	var server := GSTeamMenuServer.new()
 	server.teams_fn = func() -> Array: return rows
 	server.state_fn = func(_k: Variant) -> Dictionary: return state
 	server.clock_fn = func() -> float: return now[0]
-	server.join_fn = func(_k: Variant, id: int, kill: bool) -> DotResult:
+	server.join_fn = func(_k: Variant, id: int, kill: bool) -> GSResult:
 		joins.append([id, kill])
 		state["team"] = id
 		state["spectating"] = false
-		return DotResult.success()
-	server.spectate_fn = func(_k: Variant) -> DotResult:
+		return GSResult.success()
+	server.spectate_fn = func(_k: Variant) -> GSResult:
 		state["spectating"] = true
-		return DotResult.success()
+		return GSResult.success()
 
 	var data := server.menu_for(7)
 	_check(data["teams"].size() == 3 and not data["ffa"], "three teams make three cards")
@@ -692,7 +692,7 @@ func _test_menu_server() -> void:
 	var res := server.request(7, "2")
 	_check(res.ok and state["team"] == 2 and joins[0] == [2, false], "a switch to a team with room goes through, no kill by default")
 	res = server.request(7, "3")
-	_check(not res.ok and res.error.code == DotError.CODE_RATE_LIMITED, "the cooldown refuses the next one")
+	_check(not res.ok and res.error.code == GSError.CODE_RATE_LIMITED, "the cooldown refuses the next one")
 	now[0] += 6.0
 	res = server.request(7, "99")
 	_check(not res.ok, "an unknown team is refused")

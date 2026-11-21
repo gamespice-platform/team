@@ -1,4 +1,4 @@
-class_name DotTeamMenuServer
+class_name GSTeamMenuServer
 extends RefCounted
 
 ## The server half of the team menu (period key): `teams` answers with a `team_menu` notice, and `teams <id>`, `teams auto`, `teams spectate` and `teams play` switch. The game supplies the callables below, so this never depends on how it keeps teams.
@@ -31,11 +31,11 @@ var registered: PackedStringArray = PackedStringArray()
 var teams_fn: Callable = Callable()
 ## `func(key) -> Dictionary` `{team:int (-1 none), spectating:bool}`.
 var state_fn: Callable = Callable()
-## `func(key, team_id:int, kill:bool) -> DotResult`: move the player.
+## `func(key, team_id:int, kill:bool) -> GSResult`: move the player.
 var join_fn: Callable = Callable()
-## `func(key) -> DotResult`: start watching.
+## `func(key) -> GSResult`: start watching.
 var spectate_fn: Callable = Callable()
-## `func(key) -> DotResult`: free-for-all: start playing.
+## `func(key) -> GSResult`: free-for-all: start playing.
 var play_fn: Callable = Callable()
 ## `func(key) -> bool`: whether a switch is allowed right now when mp_teamswitch_anytime is 0.
 var window_fn: Callable = Callable()
@@ -64,21 +64,21 @@ func bind_cvars(add: Callable, flags: int = 0) -> Array:
 	return made
 
 
-func install(host: Object) -> DotResult:
+func install(host: Object) -> GSResult:
 	if host == null:
-		return DotResult.fail(DotError.CODE_UNSUPPORTED, "No host to register commands on.")
+		return GSResult.fail(GSError.CODE_UNSUPPORTED, "No host to register commands on.")
 	var adder := "add_command" if host.has_method("add_command") else ("command" if host.has_method("command") else "")
 	if adder == "":
-		return DotResult.fail(DotError.CODE_UNSUPPORTED, "That host has no way to register a command.")
-	for full in DotCommandNames.all_of(prefix, names, DEFAULTS, "teams"):
-		if not DotCommandNames.available(host, full, registered, "teams", "team"):
+		return GSResult.fail(GSError.CODE_UNSUPPORTED, "That host has no way to register a command.")
+	for full in GSCommandNames.all_of(prefix, names, DEFAULTS, "teams"):
+		if not GSCommandNames.available(host, full, registered, "teams", "team"):
 			continue
 		var command: Variant = host.call(adder, full, _cmd, "The team menu: list the teams, or switch: [team id|auto|spectate|play]", "")
 		if command is Object and (command as Object).has_method("with_chat"):
 			(command as Object).call("with_chat")
 		registered.append(full)
-	DotLog.info(CHANNEL, "commands registered", {"count": registered.size()})
-	return DotResult.success(registered)
+	GSLog.info(CHANNEL, "commands registered", {"count": registered.size()})
+	return GSResult.success(registered)
 
 
 ## Clears the callables the owner gave, which usually point back at the owner.
@@ -164,21 +164,21 @@ func _team_refusal(key: Variant, team_id: int, rows: Array, state: Dictionary) -
 
 
 ## The checks every switch passes, in order; ok carries nothing.
-func check(key: Variant, choice: String) -> DotResult:
+func check(key: Variant, choice: String) -> GSResult:
 	if value("mp_teamswitch_enabled") == 0.0:
-		return DotResult.fail(DotError.CODE_FORBIDDEN, "Team switching is off on this server.")
+		return GSResult.fail(GSError.CODE_FORBIDDEN, "Team switching is off on this server.")
 	if choice == SPECTATE and value("mp_teamswitch_spectate") == 0.0:
-		return DotResult.fail(DotError.CODE_FORBIDDEN, "Spectating is off on this server.")
+		return GSResult.fail(GSError.CODE_FORBIDDEN, "Spectating is off on this server.")
 	if value("mp_teamswitch_anytime") == 0.0 and window_fn.is_valid() and not bool(window_fn.call(key)):
-		return DotResult.fail(DotError.CODE_STATE, "You can only switch between rounds or while dead.")
+		return GSResult.fail(GSError.CODE_STATE, "You can only switch between rounds or while dead.")
 	var wait: float = _last_switch.get(key, -1e9) + value("mp_teamswitch_cooldown") - _now()
 	if wait > 0.0:
-		return DotResult.fail(DotError.CODE_RATE_LIMITED, "Wait %d s before switching again." % ceili(wait))
-	return DotResult.success()
+		return GSResult.fail(GSError.CODE_RATE_LIMITED, "Wait %d s before switching again." % ceili(wait))
+	return GSResult.success()
 
 
 ## Applies [param choice] (a team id, "auto", [constant SPECTATE] or [constant PLAY]) for [param key].
-func request(key: Variant, choice: String) -> DotResult:
+func request(key: Variant, choice: String) -> GSResult:
 	var rows: Array = teams_fn.call() if teams_fn.is_valid() else []
 	var state: Dictionary = state_fn.call(key) if state_fn.is_valid() else {}
 	var res := check(key, choice)
@@ -187,26 +187,26 @@ func request(key: Variant, choice: String) -> DotResult:
 	var spectating := bool(state.get("spectating", false))
 	if choice == SPECTATE:
 		if spectating:
-			return DotResult.fail(DotError.CODE_STATE, "You are already spectating.")
-		res = spectate_fn.call(key) if spectate_fn.is_valid() else DotResult.fail(DotError.CODE_UNSUPPORTED, "This mode cannot spectate.")
+			return GSResult.fail(GSError.CODE_STATE, "You are already spectating.")
+		res = spectate_fn.call(key) if spectate_fn.is_valid() else GSResult.fail(GSError.CODE_UNSUPPORTED, "This mode cannot spectate.")
 	elif rows.is_empty():
 		if not spectating:
-			return DotResult.fail(DotError.CODE_STATE, "You are already playing.")
-		res = play_fn.call(key) if play_fn.is_valid() else DotResult.fail(DotError.CODE_UNSUPPORTED, "This mode cannot join.")
+			return GSResult.fail(GSError.CODE_STATE, "You are already playing.")
+		res = play_fn.call(key) if play_fn.is_valid() else GSResult.fail(GSError.CODE_UNSUPPORTED, "This mode cannot join.")
 	else:
 		var team_id := -1
 		if choice == "auto" or choice == PLAY:
 			team_id = _smallest_open(key, rows, state)
 			if team_id < 0:
-				return DotResult.fail(DotError.CODE_STATE, "Every team is closed to you right now.")
+				return GSResult.fail(GSError.CODE_STATE, "Every team is closed to you right now.")
 		elif choice.is_valid_int():
 			team_id = int(choice)
 		else:
-			return DotResult.fail(DotError.CODE_INVALID, "Usage: [team id|auto|spectate|play]")
+			return GSResult.fail(GSError.CODE_INVALID, "Usage: [team id|auto|spectate|play]")
 		var why := _team_refusal(key, team_id, rows, state)
 		if why != "":
-			return DotResult.fail(DotError.CODE_STATE, why)
-		res = join_fn.call(key, team_id, value("mp_teamswitch_kill") != 0.0) if join_fn.is_valid() else DotResult.fail(DotError.CODE_UNSUPPORTED, "This mode cannot switch.")
+			return GSResult.fail(GSError.CODE_STATE, why)
+		res = join_fn.call(key, team_id, value("mp_teamswitch_kill") != 0.0) if join_fn.is_valid() else GSResult.fail(GSError.CODE_UNSUPPORTED, "This mode cannot switch.")
 	if res.ok:
 		_last_switch[key] = _now()
 	return res
@@ -263,7 +263,7 @@ func _send(ctx: Object, data: Dictionary) -> bool:
 	var session: Variant = ctx.get("session")
 	if not (session is Object) or not ResourceLoader.exists(NOTICE_SCRIPT):
 		return false
-	var server: Object = DotRegistry.get_service(&"dot_server")
+	var server: Object = GSRegistry.get_service(&"dot_server")
 	if server == null or not server.has_method("send_notice"):
 		return false
 	var notice: Object = (load(NOTICE_SCRIPT) as GDScript).call("make", &"", "", -1.0, TOPIC, data)

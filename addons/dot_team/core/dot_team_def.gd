@@ -1,10 +1,10 @@
 @tool
-class_name DotTeamDef
+class_name GSTeamDef
 extends Resource
 
 ## One side, and everything any other addon needs to know about it.
 ##
-## [b]Not called [code]DotTeam[/code].[/b] GameSpice Match already has a class by that name —
+## [b]Not called [code]GSTeam[/code].[/b] GameSpice Match already has a class by that name —
 ## its own, smaller, match-scoped notion of a side — and [code]class_name[/code] is
 ## global in Godot, so the two would collide in any project that installed both. The
 ## name is the price of the two addons being independently installable, which they are
@@ -74,8 +74,8 @@ static func make(
 	p_display: String = "",
 	p_colour: Color = Color.WHITE,
 	p_playing: bool = true
-) -> DotTeamDef:
-	var t := DotTeamDef.new()
+) -> GSTeamDef:
+	var t := GSTeamDef.new()
 	t.id = p_id
 	t.display_name = p_display if p_display != "" else String(p_id).capitalize()
 	t.short_name = t.display_name.substr(0, 3).to_upper()
@@ -95,10 +95,10 @@ func attribute(key: String, fallback: Variant = null) -> Variant:
 
 
 func attribute_is(key: String, want: Variant) -> bool:
-	# DotValue rather than ==: attributes come out of a level file or a game mode, so
+	# GSValue rather than ==: attributes come out of a level file or a game mode, so
 	# neither side's Variant type is under this file's control, and == on mismatched
 	# types is a runtime error that abandons the expression.
-	return DotValue.same(attributes.get(key, null), want)
+	return GSValue.same(attributes.get(key, null), want)
 
 
 func describe() -> String:
@@ -111,4 +111,4 @@ func describe() -> String:
 
 
 func _to_string() -> String:
-	return "DotTeamDef(%s)" % describe()
+	return "GSTeamDef(%s)" % describe()

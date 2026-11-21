@@ -1,6 +1,6 @@
 @tool
-class_name DotTeamPolicy
-extends DotConfig
+class_name GSTeamPolicy
+extends GSConfig
 
 ## Every rule about joining, leaving and being moved between sides.
 
@@ -84,10 +84,10 @@ func cli_prefix() -> String:
 	return "--team-"
 
 
-func validate() -> DotResult:
+func validate() -> GSResult:
 	if max_difference == 0:
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"A maximum difference of zero demands exactly equal sides, which an odd "
 			+ "number of players cannot satisfy.",
 			"Every join past the first odd one would be refused, and the server would "
@@ -95,8 +95,8 @@ func validate() -> DotResult:
 		)
 
 	if not allow_choice and not auto_assign:
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"Players may not choose a side and are not assigned one, so nobody ever "
 			+ "gets on a team."
 		)
@@ -104,13 +104,13 @@ func validate() -> DotResult:
 	if autobalance and not allow_switch and enforce_balance_on_switch:
 		# Legal, and worth a line: the server will move people who are not allowed to
 		# move themselves, which is a defensible design and a surprising one.
-		DotLog.debug(
+		GSLog.debug(
 			"team",
 			"autobalance is on while switching is off — the server moves people who "
 			+ "cannot move themselves"
 		)
 
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 func switch_cooldown_ticks() -> int:
@@ -128,7 +128,7 @@ enum Victim {
 # --- Presets ----------------------------------------------------------------
 
 ## Pick your side, switch freely, no balancing. A casual server.
-static func casual() -> DotTeamPolicy:
+static func casual() -> GSTeamPolicy:
 	# Not this class's own name. A script that names itself in an expression, loaded after
 	# its base, cuts Godot 4.7.2's exit teardown short and leaks every script loaded before
 	# it. See docs/gdscript-hazards.md, "A script that names itself".
@@ -142,7 +142,7 @@ static func casual() -> DotTeamPolicy:
 
 
 ## Balanced, cooled down, locked during a round. A competitive server.
-static func competitive() -> DotTeamPolicy:
+static func competitive() -> GSTeamPolicy:
 	var p := new()
 	p.auto_assign = true
 	p.allow_switch = true
@@ -156,7 +156,7 @@ static func competitive() -> DotTeamPolicy:
 
 
 ## One side, nothing to balance, nothing to switch to.
-static func free_for_all() -> DotTeamPolicy:
+static func free_for_all() -> GSTeamPolicy:
 	var p := new()
 	p.auto_assign = true
 	p.initial_team = &"players"
@@ -175,7 +175,7 @@ static func presets() -> Dictionary:
 	}
 
 
-static func preset(p_id: StringName) -> DotTeamPolicy:
+static func preset(p_id: StringName) -> GSTeamPolicy:
 	var table := presets()
 
 	if not table.has(p_id):

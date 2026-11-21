@@ -4,29 +4,29 @@ Why dot-team is shaped the way it is. The one-line rules are in [CLAUDE.md](../C
 
 ## Autobalance is only defensible if the server can say why
 
-Everything in `DotTeamBalance` is static and takes a dictionary of counts rather than a roster. Being moved to the losing side between rounds is, from the player's view, being punished for the server's arithmetic; a decision computed from counts can be printed, logged, replayed and argued with, and one computed from live objects cannot. The suite checks that two rosters given the same session make the same moves, which is only meaningful because the function is pure.
+Everything in `GSTeamBalance` is static and takes a dictionary of counts rather than a roster. Being moved to the losing side between rounds is, from the player's view, being punished for the server's arithmetic; a decision computed from counts can be printed, logged, replayed and argued with, and one computed from live objects cannot. The suite checks that two rosters given the same session make the same moves, which is only meaningful because the function is pure.
 
 ## Sides outlive the match
 
-GameSpice Match's team manager is scoped to a match and resets with it: right for a deathmatch, wrong for a server where somebody joins blue, plays four maps and expects to still be blue. `DotTeamRoster` holds the assignment for the session and **drives** GameSpice Match's rather than competing with it.
+GameSpice Match's team manager is scoped to a match and resets with it: right for a deathmatch, wrong for a server where somebody joins blue, plays four maps and expects to still be blue. `GSTeamRoster` holds the assignment for the session and **drives** GameSpice Match's rather than competing with it.
 
-`DotTeamDef`, not `DotTeam`: GameSpice Match already has `DotTeam` and `DotTeamManager`, `class_name` is global, and the two addons install side by side. Renaming GameSpice Match's would break every consumer of a published addon to gain a shorter name here.
+`GSTeamDef`, not `GSTeam`: GameSpice Match already has `GSTeam` and `GSTeamManager`, `class_name` is global, and the two addons install side by side. Renaming GameSpice Match's would break every consumer of a published addon to gain a shorter name here.
 
 ## Four entries in a two-sided set
 
-`DotTeamSet.standard_pair()` returns **unassigned, blue, red, spectator**. The two non-playing entries are the ones a project inventing this forgets: a player who has connected and not chosen is neither on a team nor watching, and a set without an id for that state represents it as `&""`, which matches nothing in one comparison and everything in another.
+`GSTeamSet.standard_pair()` returns **unassigned, blue, red, spectator**. The two non-playing entries are the ones a project inventing this forgets: a player who has connected and not chosen is neither on a team nor watching, and a set without an id for that state represents it as `&""`, which matches nothing in one comparison and everything in another.
 
-`playing` is the most-read field in `DotTeamDef`. Balance ignores non-playing sides, win conditions ignore them, the scoreboard sorts them last. A game that treats spectators as another team gets a round that cannot end, because the spectators are still alive.
+`playing` is the most-read field in `GSTeamDef`. Balance ignores non-playing sides, win conditions ignore them, the scoreboard sorts them last. A game that treats spectators as another team gets a round that cannot end, because the spectators are still alive.
 
 Free-for-all is **one playing team with friendly fire on**, not zero teams. Zero makes every consumer branch on whether teams exist, and the branch nobody wrote is the one that matters.
 
 ## `are_enemies` is written once
 
-GameSpice Combat, GameSpice Chat and GameSpice Spectate all ask it. The natural spelling ("their team is not my team") makes a spectator everybody's enemy, and three addons each writing it means at least one gets it wrong. `DotTeamSet.are_enemies` requires *both* sides to be playing and different; `DotTeamRoster.are_enemies` resolves the keys and asks it.
+GameSpice Combat, GameSpice Chat and GameSpice Spectate all ask it. The natural spelling ("their team is not my team") makes a spectator everybody's enemy, and three addons each writing it means at least one gets it wrong. `GSTeamSet.are_enemies` requires *both* sides to be playing and different; `GSTeamRoster.are_enemies` resolves the keys and asks it.
 
 ## `attributes` is open on purpose
 
-GameSpice Objective wants to know which side attacks, GameSpice Spawn wants a site group, a game wants an announcer line and an icon. A fixed field list means this file gains a property every time another addon needs one. `attribute_is` uses `DotValue.same`, because both sides come from content rather than code.
+GameSpice Objective wants to know which side attacks, GameSpice Spawn wants a site group, a game wants an announcer line and an icon. A fixed field list means this file gains a property every time another addon needs one. `attribute_is` uses `GSValue.same`, because both sides come from content rather than code.
 
 ## `validate()` refuses two configurations, and both have a symptom
 
@@ -36,17 +36,17 @@ GameSpice Objective wants to know which side attacks, GameSpice Spawn wants a si
 
 `bind_match(manager)` requires an `assign(key, index)` method. Duck-typed because dot-team must not depend on dot-match (a lobby, a timer server and a sandbox all want sides and none wants a match loop); one-directional because two systems both deciding somebody's side is the bug this addon removes.
 
-`_push_to_match` translates a side to GameSpice Match's own team **id** by position among the *playing* ids (stable, because the set is ordered and built once), read off the manager's `teams` list. GameSpice Match's `DotTeam.standard_pair()` is ids `1` and `2` and its spectator team is `31`; passing GameSpice Team's index straight through would assign everybody to `0` and `1`, of which only one exists, and half the server would be on a side GameSpice Match refuses to spawn. A move to a non-playing side is not pushed: GameSpice Match has no index for "watching".
+`_push_to_match` translates a side to GameSpice Match's own team **id** by position among the *playing* ids (stable, because the set is ordered and built once), read off the manager's `teams` list. GameSpice Match's `GSTeam.standard_pair()` is ids `1` and `2` and its spectator team is `31`; passing GameSpice Team's index straight through would assign everybody to `0` and `1`, of which only one exists, and half the server would be on a side GameSpice Match refuses to spawn. A move to a non-playing side is not pushed: GameSpice Match has no index for "watching".
 
 ## The spectate bridge: an index, not a cast
 
-`DotTeamSpectate` reaches dot-spectate without naming it: no `DotSpectator*` identifier appears in a statement anywhere in this addon. A script that mentions a `class_name` the project does not have fails to parse and takes every script referencing it down with it (dot-weapon's `DotWeaponLoadoutBridge` documents the same failure). `_make_spectator_manager` finds the class through `ProjectSettings.get_global_class_list()` and instantiates it, the trick `DotTransportENet` uses for ENet on web. Without dot-spectate the bridge's watching half is inert and its assignment half works, which is what a lobby wants.
+`GSTeamSpectate` reaches dot-spectate without naming it: no `GSSpectator*` identifier appears in a statement anywhere in this addon. A script that mentions a `class_name` the project does not have fails to parse and takes every script referencing it down with it (dot-weapon's `GSWeaponLoadoutBridge` documents the same failure). `_make_spectator_manager` finds the class through `ProjectSettings.get_global_class_list()` and instantiates it, the trick `GSTransportENet` uses for ENet on web. Without dot-spectate the bridge's watching half is inert and its assignment half works, which is what a lobby wants.
 
 `team_index` is one-based over the **playing** ids, so spectators and the unassigned pen are both zero, which is what GameSpice Spectate means by "no team". `_playing_ids` is cached in `setup()`: recomputing per call is a linear search per viewer per tick, and re-reading the set would let a mid-round change renumber the sides underneath GameSpice Spectate, silently inverting the policy.
 
 The policy is installed as dot-spectate's `target_filter`, which runs **after** its own rules, so `mp_forcecamera 2` still forbids everything regardless of what is written here. The suite checks that ordering; the opposite arrangement would look identical in every test that did not specifically try it.
 
-## Who takes a role: `DotTeamRotation`
+## Who takes a role: `GSTeamRotation`
 
 The other half of asymmetric games: not which side somebody joins, but who is the hunter, the activator or the driver this round. It is static like the balance arithmetic and returns who was picked **and why**, so "why am I hunter again" has an answer.
 
@@ -60,11 +60,11 @@ The random roll is **mixed**, not just hashed: Godot's string hash moves by one 
 
 ## Players stop at each other by relation
 
-`DotTeamBlockRules` answers one question, `blocks(a, b)`, and moves nothing; GameSpice Player Controller's `DotPlayerBodyRules.pair_fn` is where a game plugs it in, so neither addon names the other.
+`GSTeamBlockRules` answers one question, `blocks(a, b)`, and moves nothing; GameSpice Player Controller's `GSPlayerBodyRules.pair_fn` is where a game plugs it in, so neither addon names the other.
 
 - **Relations.** Same side for both keys (`side_fn`) is TEAM; everything else is ENEMY: different sides, no side, a spectator, and every pair when fewer than two sides are playing (a free-for-all, a solo game). That last rule is deliberate: calling an FFA's one side "teammates" would turn the default (teammates pass) into walking through every bot, which is what the first play test (2026-10-11) showed is unplayable. `mp_enemyblock` therefore governs FFA and solo play, and stays 1.
-- **Cvars** (ordinary archived, replicated cvars, so `server.cfg` lines and the layered `DotTeamBlockConfig` both work): `mp_teamblock` (0), `mp_enemyblock` (1), `mp_blockcmd` (0 disabled, 1 admins, 2 everyone; 2), `mp_blockcmd_relations` (bitmask 1 teammates, 2 enemies; 1, because passing through an enemy is a gameplay change), `mp_blockscope` (0 the caller's own pairs, 1 the caller's whole team; 0), `mp_blockstate` (the server's record of requests, replicated; never set by hand).
-- **Commands.** `!noblock [team|enemy|all]` asks to pass through, `!block [team|enemy|all|reset]` asks to block, `reset` clears. They are console commands with chat enabled (`DotTeamBlockCommands`), so the permission, rate and audit machinery is the server's. **Passing wins**: where the rule says block, either of two players asking to pass lets them pass; where it says pass, blocking needs both to have asked (one player cannot wall in another).
+- **Cvars** (ordinary archived, replicated cvars, so `server.cfg` lines and the layered `GSTeamBlockConfig` both work): `mp_teamblock` (0), `mp_enemyblock` (1), `mp_blockcmd` (0 disabled, 1 admins, 2 everyone; 2), `mp_blockcmd_relations` (bitmask 1 teammates, 2 enemies; 1, because passing through an enemy is a gameplay change), `mp_blockscope` (0 the caller's own pairs, 1 the caller's whole team; 0), `mp_blockstate` (the server's record of requests, replicated; never set by hand).
+- **Commands.** `!noblock [team|enemy|all]` asks to pass through, `!block [team|enemy|all|reset]` asks to block, `reset` clears. They are console commands with chat enabled (`GSTeamBlockCommands`), so the permission, rate and audit machinery is the server's. **Passing wins**: where the rule says block, either of two players asking to pass lets them pass; where it says pass, blocking needs both to have asked (one player cannot wall in another).
 - **Replication.** Collision is part of the simulation, so a client must decide the same pair as the server or it rubber-bands. The rules and the requests ride replicated cvars; `mp_blockstate` is one short string (`holder=TE;...`, `-`, `0` or `1` per relation) that a client applies with `follow_cvars`. Apply the rules on every machine that simulates players.
 - **`mp_solidplayers`** stays the master switch: 0 and nobody blocks, whatever this says. At 1, this decides the pair. A game with physics hulls calls `apply_exceptions` (dot-player-controller) on `changed`; a game with an analytic body filters its hull list through `body_rules.blocks`.
 
@@ -74,4 +74,4 @@ It does not score, spawn, damage or draw. It does not know what a round is: `liv
 
 ## The team menu is rules on the server and cards on the client
 
-`DotTeamMenuServer` holds every rule of a voluntary switch (enabled, cooldown, imbalance, per-team and global cap, anytime or only between rounds, kill on switch, spectate offered) as `mp_teamswitch_*` cvars read per request, so an admin changes them live. It never touches a game's team storage: the game passes callables, so the same rules serve a game that keeps teams in `DotTeamManager` and one that keeps them in `DotTeamRoster`. The reply rides the existing notice channel as a `team_menu` notice, because the wire kinds are append-only. A free-for-all is a menu with no team rows, which leaves Play and Spectate. Names, colours and N teams are the game's config, not this class's.
+`GSTeamMenuServer` holds every rule of a voluntary switch (enabled, cooldown, imbalance, per-team and global cap, anytime or only between rounds, kill on switch, spectate offered) as `mp_teamswitch_*` cvars read per request, so an admin changes them live. It never touches a game's team storage: the game passes callables, so the same rules serve a game that keeps teams in `GSTeamManager` and one that keeps them in `GSTeamRoster`. The reply rides the existing notice channel as a `team_menu` notice, because the wire kinds are append-only. A free-for-all is a menu with no team rows, which leaves Play and Spectate. Names, colours and N teams are the game's config, not this class's.

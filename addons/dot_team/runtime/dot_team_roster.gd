@@ -1,4 +1,4 @@
-class_name DotTeamRoster
+class_name GSTeamRoster
 extends Node
 
 ## Who is on which side, authoritatively on one machine and mirrored on the rest.
@@ -32,9 +32,9 @@ signal switch_refused(key: String, to: StringName, why: String)
 
 @export var authoritative: bool = true
 
-@export var teams: DotTeamSet = null
+@export var teams: GSTeamSet = null
 
-@export var policy: DotTeamPolicy = null
+@export var policy: GSTeamPolicy = null
 
 @export var register_service: bool = true
 
@@ -51,7 +51,7 @@ var score_fn: Callable = Callable()
 ## `func(key: String) -> int`. When somebody joined, for the newest/oldest rules.
 var joined_fn: Callable = Callable()
 
-## Whether rounds are live, for [member DotTeamPolicy.lock_when_live].
+## Whether rounds are live, for [member GSTeamPolicy.lock_when_live].
 var live_fn: Callable = Callable()
 
 ## `func() -> int`. The current tick, for a bound match manager that wants one.
@@ -72,21 +72,21 @@ var _match: Object = null
 
 func _ready() -> void:
 	if teams == null:
-		teams = DotTeamSet.standard_pair()
+		teams = GSTeamSet.standard_pair()
 
 	if policy == null:
-		policy = DotTeamPolicy.new()
+		policy = GSTeamPolicy.new()
 
 	if register_service and authoritative:
-		DotRegistry.register(SERVICE, self)
+		GSRegistry.register(SERVICE, self)
 
 
-func setup() -> DotResult:
+func setup() -> GSResult:
 	if teams == null:
-		teams = DotTeamSet.standard_pair()
+		teams = GSTeamSet.standard_pair()
 
 	if policy == null:
-		policy = DotTeamPolicy.new()
+		policy = GSTeamPolicy.new()
 
 	var built := teams.build()
 
@@ -99,29 +99,29 @@ func setup() -> DotResult:
 		return valid.wrap("This team policy was not installed")
 
 	if not teams.has_team(policy.initial_team):
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"The policy starts players on '%s', which this set has no team for."
 			% String(policy.initial_team),
 			"Everybody would land on a side that does not exist, and every lookup "
 			+ "about them would answer null."
 		)
 
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 # --- Membership -------------------------------------------------------------
 
 ## Adds somebody, on the policy's initial side or on the smallest one.
-func add(key: String, tick: int = 0) -> DotResult:
+func add(key: String, tick: int = 0) -> GSResult:
 	if not authoritative:
 		return _refuse_mirror("add")
 
 	if key == "":
-		return DotResult.fail(DotError.CODE_INVALID, "A player with no key has no side.")
+		return GSResult.fail(GSError.CODE_INVALID, "A player with no key has no side.")
 
 	if _team_of.has(key):
-		return DotResult.success(_team_of[key])
+		return GSResult.success(_team_of[key])
 
 	var team := policy.initial_team
 
@@ -131,18 +131,18 @@ func add(key: String, tick: int = 0) -> DotResult:
 	_team_of[key] = team
 	_order.append(key)
 
-	DotLog.debug(CHANNEL, "added", {"key": key, "team": String(team)})
+	GSLog.debug(CHANNEL, "added", {"key": key, "team": String(team)})
 	team_changed.emit(key, &"", team, &"joined")
 	_push_to_match(key, team)
-	return DotResult.success(team)
+	return GSResult.success(team)
 
 
-func remove(key: String) -> DotResult:
+func remove(key: String) -> GSResult:
 	if not authoritative:
 		return _refuse_mirror("remove")
 
 	if not _team_of.has(key):
-		return DotResult.fail(DotError.CODE_INVALID, "No such player: '%s'." % key)
+		return GSResult.fail(GSError.CODE_INVALID, "No such player: '%s'." % key)
 
 	var was: StringName = _team_of[key]
 	_team_of.erase(key)
@@ -153,7 +153,7 @@ func remove(key: String) -> DotResult:
 		_order.remove_at(index)
 
 	team_changed.emit(key, was, &"", &"left")
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 ## The side somebody is on, or [code]&""[/code].
@@ -199,11 +199,11 @@ func count_on(team_id: StringName) -> int:
 
 
 func spread() -> int:
-	return DotTeamBalance.spread(counts(), teams.playing_ids())
+	return GSTeamBalance.spread(counts(), teams.playing_ids())
 
 
 func is_balanced() -> bool:
-	return DotTeamBalance.balanced(counts(), teams.playing_ids(), policy.max_difference)
+	return GSTeamBalance.balanced(counts(), teams.playing_ids(), policy.max_difference)
 
 
 ## Whether two players are on opposing playing sides.
@@ -245,40 +245,40 @@ func best_team_for(_key: String) -> StringName:
 		# up with nine players on a five-slot mode.
 		return policy.initial_team
 
-	return DotTeamBalance.smallest(c, with_room)
+	return GSTeamBalance.smallest(c, with_room)
 
 
 ## A player asking to move. Enforces the whole policy and explains a refusal.
-func request_switch(key: String, to: StringName, tick: int = 0) -> DotResult:
+func request_switch(key: String, to: StringName, tick: int = 0) -> GSResult:
 	if not authoritative:
 		return _refuse_mirror("request_switch")
 
 	if not _team_of.has(key):
-		return DotResult.fail(DotError.CODE_INVALID, "No such player: '%s'." % key)
+		return GSResult.fail(GSError.CODE_INVALID, "No such player: '%s'." % key)
 
 	var from: StringName = _team_of[key]
 
 	if from == to:
-		return DotResult.success(to)
+		return GSResult.success(to)
 
 	var refusal := _switch_refusal(key, from, to, tick)
 
 	if refusal != "":
 		switch_refused.emit(key, to, refusal)
-		return DotResult.fail(DotError.CODE_FORBIDDEN, refusal)
+		return GSResult.fail(GSError.CODE_FORBIDDEN, refusal)
 
 	_last_switch[key] = tick
 	return force_team(key, to, &"chose")
 
 
 ## Moves somebody regardless of the policy. For a console command or a game mode.
-func force_team(key: String, to: StringName, reason: StringName = &"forced") -> DotResult:
+func force_team(key: String, to: StringName, reason: StringName = &"forced") -> GSResult:
 	if not authoritative:
 		return _refuse_mirror("force_team")
 
 	if not teams.has_team(to):
-		return DotResult.fail(
-			DotError.CODE_INVALID, "No such team: '%s'." % String(to)
+		return GSResult.fail(
+			GSError.CODE_INVALID, "No such team: '%s'." % String(to)
 		)
 
 	var from: StringName = _team_of.get(key, &"")
@@ -288,15 +288,15 @@ func force_team(key: String, to: StringName, reason: StringName = &"forced") -> 
 		_order.append(key)
 	else:
 		if from == to:
-			return DotResult.success(to)
+			return GSResult.success(to)
 		_team_of[key] = to
 
-	DotLog.info(CHANNEL, "team changed", {
+	GSLog.info(CHANNEL, "team changed", {
 		"key": key, "from": String(from), "to": String(to), "reason": String(reason)
 	})
 	team_changed.emit(key, from, to, reason)
 	_push_to_match(key, to)
-	return DotResult.success(to)
+	return GSResult.success(to)
 
 
 ## Why a switch is not allowed, or "" if it is.
@@ -336,7 +336,7 @@ func _switch_refusal(key: String, from: StringName, to: StringName, tick: int) -
 		policy.enforce_balance_on_switch
 		and teams.is_playing(to)
 		and teams.is_playing(from)
-		and DotTeamBalance.would_unbalance(
+		and GSTeamBalance.would_unbalance(
 			_counts_without(key), teams.playing_ids(), to, policy.max_difference
 		)
 	):
@@ -351,7 +351,7 @@ func _switch_refusal(key: String, from: StringName, to: StringName, tick: int) -
 ##
 ## [b]Deterministic and explainable, on purpose.[/b] Being moved is, from the player's
 ## point of view, being punished for the server's arithmetic — so every move can be
-## printed with [method DotTeamBalance.explain], and two servers running the same
+## printed with [method GSTeamBalance.explain], and two servers running the same
 ## session make the same moves.
 func rebalance(tick: int = 0) -> Array[Dictionary]:
 	var done: Array[Dictionary] = []
@@ -361,7 +361,7 @@ func rebalance(tick: int = 0) -> Array[Dictionary]:
 
 	var order := teams.playing_ids()
 	var before := spread()
-	var plan := DotTeamBalance.moves_to_balance(counts(), order, policy.max_difference)
+	var plan := GSTeamBalance.moves_to_balance(counts(), order, policy.max_difference)
 
 	if plan.is_empty():
 		return done
@@ -372,7 +372,7 @@ func rebalance(tick: int = 0) -> Array[Dictionary]:
 	for move in plan:
 		var from: StringName = move["from"]
 		var to: StringName = move["to"]
-		var victim := DotTeamBalance.choose_victim(
+		var victim := GSTeamBalance.choose_victim(
 			_candidates(from), policy.balance_victim, policy.autobalance_while_alive, rng
 		)
 
@@ -380,7 +380,7 @@ func rebalance(tick: int = 0) -> Array[Dictionary]:
 			# Everybody on the oversized side is alive and the policy forbids moving
 			# the living. Correct, and worth stopping on rather than looping: the next
 			# move in the plan comes from the same side.
-			DotLog.debug(CHANNEL, "nobody eligible to move", {"from": String(from)})
+			GSLog.debug(CHANNEL, "nobody eligible to move", {"from": String(from)})
 			break
 
 		var res := force_team(victim, to, &"balanced")
@@ -389,7 +389,7 @@ func rebalance(tick: int = 0) -> Array[Dictionary]:
 			done.append({"key": victim, "from": from, "to": to})
 
 	if not done.is_empty():
-		DotLog.info(CHANNEL, "rebalanced", {"moves": done.size(), "spread_before": before})
+		GSLog.info(CHANNEL, "rebalanced", {"moves": done.size(), "spread_before": before})
 		balanced.emit(done)
 
 	return done
@@ -430,16 +430,16 @@ func _counts_without(key: String) -> Dictionary:
 ##
 ## The direction matters: this is the authority and GameSpice Match is told. Two systems both
 ## deciding which side somebody is on is the bug this addon was written to remove.
-func bind_match(manager: Object) -> DotResult:
+func bind_match(manager: Object) -> GSResult:
 	if manager == null:
 		_match = null
-		return DotResult.success(null)
+		return GSResult.success(null)
 
 	if not manager.has_method("assign"):
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"That object has no assign() and cannot be driven as a team manager.",
-			"dot-match's DotTeamManager has one. Anything else needs the same shape: "
+			"dot-match's GSTeamManager has one. Anything else needs the same shape: "
 			+ "assign(key: String, tick: int, team: int)."
 		)
 
@@ -448,7 +448,7 @@ func bind_match(manager: Object) -> DotResult:
 	for key in _order:
 		_push_to_match(key, _team_of[key])
 
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 ## Tells a bound match manager which side somebody is on.
@@ -476,7 +476,7 @@ func _push_to_match(key: String, team_id: StringName) -> void:
 	var target := _match_team_id(index)
 
 	if target < 0:
-		DotLog.warn(CHANNEL, "the bound manager has no side at that position", {
+		GSLog.warn(CHANNEL, "the bound manager has no side at that position", {
 			"team": String(team_id), "position": index
 		})
 		return
@@ -484,9 +484,9 @@ func _push_to_match(key: String, team_id: StringName) -> void:
 	var tick := int(match_tick_fn.call()) if match_tick_fn.is_valid() else 0
 	var res: Variant = _match.call("assign", key, tick, target)
 
-	if res is DotResult and not (res as DotResult).ok:
-		DotLog.debug(CHANNEL, "the bound manager refused an assignment", {
-			"key": key, "why": (res as DotResult).error.message
+	if res is GSResult and not (res as GSResult).ok:
+		GSLog.debug(CHANNEL, "the bound manager refused an assignment", {
+			"key": key, "why": (res as GSResult).error.message
 		})
 
 
@@ -522,17 +522,17 @@ func to_wire() -> Dictionary:
 	return {"teams": rows, "order": _order}
 
 
-func apply_wire(payload: Dictionary) -> DotResult:
+func apply_wire(payload: Dictionary) -> GSResult:
 	if authoritative:
-		return DotResult.fail(
-			DotError.CODE_FORBIDDEN,
+		return GSResult.fail(
+			GSError.CODE_FORBIDDEN,
 			"An authoritative team roster is not told who is on which side."
 		)
 
 	var rows: Variant = payload.get("teams", {})
 
 	if not (rows is Dictionary):
-		return DotResult.fail(DotError.CODE_PARSE, "A team payload has no assignments.")
+		return GSResult.fail(GSError.CODE_PARSE, "A team payload has no assignments.")
 
 	_team_of.clear()
 	_order = PackedStringArray()
@@ -546,7 +546,7 @@ func apply_wire(payload: Dictionary) -> DotResult:
 			_team_of[k] = StringName(str((rows as Dictionary)[k]))
 			_order.append(k)
 
-	return DotResult.success(_team_of.size())
+	return GSResult.success(_team_of.size())
 
 
 func clear() -> void:
@@ -573,7 +573,7 @@ func describe_lines() -> PackedStringArray:
 
 
 func describe() -> String:
-	return "DotTeamRoster(%d players, spread %d)" % [_team_of.size(), spread()]
+	return "GSTeamRoster(%d players, spread %d)" % [_team_of.size(), spread()]
 
 
 # --- Internals --------------------------------------------------------------
@@ -598,8 +598,8 @@ func _is_live() -> bool:
 	return bool(live_fn.call()) if live_fn.is_valid() else false
 
 
-func _refuse_mirror(what: String) -> DotResult:
-	return DotResult.fail(
-		DotError.CODE_FORBIDDEN,
+func _refuse_mirror(what: String) -> GSResult:
+	return GSResult.fail(
+		GSError.CODE_FORBIDDEN,
 		"A mirrored team roster decides nothing; it is told. ('%s')" % what
 	)

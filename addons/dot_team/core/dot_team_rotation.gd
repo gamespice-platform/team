@@ -1,8 +1,8 @@
-class_name DotTeamRotation
+class_name GSTeamRotation
 extends RefCounted
 
 ## Who takes a role this round: the hunters in a hide-and-seek game, the activators in a trap
-## course, the drivers in a chase. Pure, static and explainable, like [DotTeamBalance].
+## course, the drivers in a chase. Pure, static and explainable, like [GSTeamBalance].
 ##
 ## [b]Three answers, because servers disagree and each is right for somebody.[/b]
 ## [br]- [constant RANDOM]: a seeded draw that passes over whoever had the role last round. A
@@ -147,7 +147,7 @@ static func forget(history: Dictionary, key: StringName) -> void:
 	history.erase(key)
 
 
-## A seeded order for one key: GameSpice Core's [DotRandomStream], a child stream named by the
+## A seeded order for one key: GameSpice Core's [GSRandomStream], a child stream named by the
 ## key, drawn at index 0.
 ##
 ## [b]Not a hash of the key, twice over.[/b] Godot's string hash moves by one when the last
@@ -157,7 +157,7 @@ static func forget(history: Dictionary, key: StringName) -> void:
 ## draw a different side after an upgrade. The stream hashes names with FNV-1a and mixes
 ## with SplitMix64, which is the family's one generator.
 static func _roll(seed_value: int, key: StringName) -> int:
-	return DotRandomStream.new(seed_value, &"team-rotation").stream(key).at(0)
+	return GSRandomStream.new(seed_value, &"team-rotation").stream(key).at(0)
 
 
 static func _before(a: Array, b: Array) -> bool:
