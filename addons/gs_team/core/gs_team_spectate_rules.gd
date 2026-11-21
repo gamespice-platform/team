@@ -4,7 +4,7 @@ extends GSConfig
 
 ## Who may watch whom, in terms of sides rather than of numbers.
 ##
-## [b]This sits on top of dot-spectate's rules rather than replacing them.[/b] That
+## [b]This sits on top of gs-spectate's rules rather than replacing them.[/b] That
 ## addon already has the force-camera policy and the broadcast delay, and both are
 ## right; what it does not have is a notion of what a side [i]is[/i] — its
 ## [code]team_fn[/code] answers an integer and zero means "none". So the policy here is
@@ -76,7 +76,7 @@ extends GSConfig
 
 
 func env_prefix() -> String:
-	return "DOT_TEAM_SPECTATE_"
+	return "GS_TEAM_SPECTATE_"
 
 
 func cli_prefix() -> String:

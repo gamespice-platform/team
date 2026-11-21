@@ -15,7 +15,7 @@ extends Node
 
 const CHANNEL := "team"
 
-const SERVICE := &"dot_team_roster"
+const SERVICE := &"gs_team_roster"
 
 ## Somebody's side changed. [param reason] is [code]&"joined"[/code],
 ## [code]&"chose"[/code], [code]&"assigned"[/code], [code]&"balanced"[/code] or
@@ -439,7 +439,7 @@ func bind_match(manager: Object) -> GSResult:
 		return GSResult.fail(
 			GSError.CODE_INVALID,
 			"That object has no assign() and cannot be driven as a team manager.",
-			"dot-match's GSTeamManager has one. Anything else needs the same shape: "
+			"gs-match's GSTeamManager has one. Anything else needs the same shape: "
 			+ "assign(key: String, tick: int, team: int)."
 		)
 

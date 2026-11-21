@@ -5,8 +5,8 @@
 # Sibling repositories, linked for local development:
 #   ln -s ../../<repo>/addons/<addon> addons/<addon>
 # Consumers copy every one of them into their own project.
-/addons/dot_core
-/addons/dot_spectate
+/addons/gs_core
+/addons/gs_spectate
 
 # Exports
 build/

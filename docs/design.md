@@ -1,6 +1,6 @@
 # Design
 
-Why dot-team is shaped the way it is. The one-line rules are in [CLAUDE.md](../CLAUDE.md).
+Why gs-team is shaped the way it is. The one-line rules are in [CLAUDE.md](../CLAUDE.md).
 
 ## Autobalance is only defensible if the server can say why
 
@@ -34,17 +34,17 @@ GameSpice Objective wants to know which side attacks, GameSpice Spawn wants a si
 
 ## The GameSpice Match bridge is duck-typed and one-directional
 
-`bind_match(manager)` requires an `assign(key, index)` method. Duck-typed because dot-team must not depend on dot-match (a lobby, a timer server and a sandbox all want sides and none wants a match loop); one-directional because two systems both deciding somebody's side is the bug this addon removes.
+`bind_match(manager)` requires an `assign(key, index)` method. Duck-typed because gs-team must not depend on gs-match (a lobby, a timer server and a sandbox all want sides and none wants a match loop); one-directional because two systems both deciding somebody's side is the bug this addon removes.
 
 `_push_to_match` translates a side to GameSpice Match's own team **id** by position among the *playing* ids (stable, because the set is ordered and built once), read off the manager's `teams` list. GameSpice Match's `GSTeam.standard_pair()` is ids `1` and `2` and its spectator team is `31`; passing GameSpice Team's index straight through would assign everybody to `0` and `1`, of which only one exists, and half the server would be on a side GameSpice Match refuses to spawn. A move to a non-playing side is not pushed: GameSpice Match has no index for "watching".
 
 ## The spectate bridge: an index, not a cast
 
-`GSTeamSpectate` reaches dot-spectate without naming it: no `GSSpectator*` identifier appears in a statement anywhere in this addon. A script that mentions a `class_name` the project does not have fails to parse and takes every script referencing it down with it (dot-weapon's `GSWeaponLoadoutBridge` documents the same failure). `_make_spectator_manager` finds the class through `ProjectSettings.get_global_class_list()` and instantiates it, the trick `GSTransportENet` uses for ENet on web. Without dot-spectate the bridge's watching half is inert and its assignment half works, which is what a lobby wants.
+`GSTeamSpectate` reaches gs-spectate without naming it: no `GSSpectator*` identifier appears in a statement anywhere in this addon. A script that mentions a `class_name` the project does not have fails to parse and takes every script referencing it down with it (gs-weapon's `GSWeaponLoadoutBridge` documents the same failure). `_make_spectator_manager` finds the class through `ProjectSettings.get_global_class_list()` and instantiates it, the trick `GSTransportENet` uses for ENet on web. Without gs-spectate the bridge's watching half is inert and its assignment half works, which is what a lobby wants.
 
 `team_index` is one-based over the **playing** ids, so spectators and the unassigned pen are both zero, which is what GameSpice Spectate means by "no team". `_playing_ids` is cached in `setup()`: recomputing per call is a linear search per viewer per tick, and re-reading the set would let a mid-round change renumber the sides underneath GameSpice Spectate, silently inverting the policy.
 
-The policy is installed as dot-spectate's `target_filter`, which runs **after** its own rules, so `mp_forcecamera 2` still forbids everything regardless of what is written here. The suite checks that ordering; the opposite arrangement would look identical in every test that did not specifically try it.
+The policy is installed as gs-spectate's `target_filter`, which runs **after** its own rules, so `mp_forcecamera 2` still forbids everything regardless of what is written here. The suite checks that ordering; the opposite arrangement would look identical in every test that did not specifically try it.
 
 ## Who takes a role: `GSTeamRotation`
 
@@ -66,7 +66,7 @@ The random roll is **mixed**, not just hashed: Godot's string hash moves by one 
 - **Cvars** (ordinary archived, replicated cvars, so `server.cfg` lines and the layered `GSTeamBlockConfig` both work): `mp_teamblock` (0), `mp_enemyblock` (1), `mp_blockcmd` (0 disabled, 1 admins, 2 everyone; 2), `mp_blockcmd_relations` (bitmask 1 teammates, 2 enemies; 1, because passing through an enemy is a gameplay change), `mp_blockscope` (0 the caller's own pairs, 1 the caller's whole team; 0), `mp_blockstate` (the server's record of requests, replicated; never set by hand).
 - **Commands.** `!noblock [team|enemy|all]` asks to pass through, `!block [team|enemy|all|reset]` asks to block, `reset` clears. They are console commands with chat enabled (`GSTeamBlockCommands`), so the permission, rate and audit machinery is the server's. **Passing wins**: where the rule says block, either of two players asking to pass lets them pass; where it says pass, blocking needs both to have asked (one player cannot wall in another).
 - **Replication.** Collision is part of the simulation, so a client must decide the same pair as the server or it rubber-bands. The rules and the requests ride replicated cvars; `mp_blockstate` is one short string (`holder=TE;...`, `-`, `0` or `1` per relation) that a client applies with `follow_cvars`. Apply the rules on every machine that simulates players.
-- **`mp_solidplayers`** stays the master switch: 0 and nobody blocks, whatever this says. At 1, this decides the pair. A game with physics hulls calls `apply_exceptions` (dot-player-controller) on `changed`; a game with an analytic body filters its hull list through `body_rules.blocks`.
+- **`mp_solidplayers`** stays the master switch: 0 and nobody blocks, whatever this says. At 1, this decides the pair. A game with physics hulls calls `apply_exceptions` (gs-player-controller) on `changed`; a game with an analytic body filters its hull list through `body_rules.blocks`.
 
 ## What this does not do
 

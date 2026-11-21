@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="dot-team"
+config/name="gs-team"
 config/description="Sides that outlive a match: definitions with colours and attributes every other addon reads, a policy for joining and switching, deterministic balance, and a roster that mirrors to clients."
 run/main_scene="res://examples/team_selftest.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
@@ -23,7 +23,7 @@ window/size/viewport_height=900
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/dot_team/plugin.cfg")
+enabled=PackedStringArray("res://addons/gs_team/plugin.cfg")
 
 [importer_defaults]
 

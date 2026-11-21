@@ -30,7 +30,7 @@ extends Node
 
 const CHANNEL := "team.spectate"
 
-const SERVICE := &"dot_team"
+const SERVICE := &"gs_team"
 
 ## Somebody started watching.
 signal began(key: String, target: String)
@@ -97,7 +97,7 @@ func setup() -> GSResult:
 			GSError.CODE_STATE,
 			"GSTeamSpectate has no team roster.",
 			"Assign `teams` before calling setup(); the whole addon is the bridge "
-			+ "between that and dot-spectate."
+			+ "between that and gs-spectate."
 		)
 
 	if not teams.teams.has_team(rules.spectator_team):

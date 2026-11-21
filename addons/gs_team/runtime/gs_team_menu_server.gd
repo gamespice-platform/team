@@ -6,7 +6,7 @@ extends RefCounted
 
 const CHANNEL := "team.menu"
 const TOPIC := &"team_menu"
-const NOTICE_SCRIPT := "res://addons/dot_server/net/dot_notice.gd"
+const NOTICE_SCRIPT := "res://addons/gs_server/net/gs_notice.gd"
 const DEFAULTS := {"teams": "teams"}
 
 ## Menu choice meaning "watch, do not play".
@@ -41,7 +41,7 @@ var play_fn: Callable = Callable()
 var window_fn: Callable = Callable()
 ## `func(ctx) -> key`; null refuses. The default is the session's userid.
 var key_fn: Callable = Callable()
-## `func(ctx, data) -> bool`: unset sends a notice through the `dot_server` service.
+## `func(ctx, data) -> bool`: unset sends a notice through the `gs_server` service.
 var notice_fn: Callable = Callable()
 ## `func() -> float`: seconds, for a suite.
 var clock_fn: Callable = Callable()
@@ -263,7 +263,7 @@ func _send(ctx: Object, data: Dictionary) -> bool:
 	var session: Variant = ctx.get("session")
 	if not (session is Object) or not ResourceLoader.exists(NOTICE_SCRIPT):
 		return false
-	var server: Object = GSRegistry.get_service(&"dot_server")
+	var server: Object = GSRegistry.get_service(&"gs_server")
 	if server == null or not server.has_method("send_notice"):
 		return false
 	var notice: Object = (load(NOTICE_SCRIPT) as GDScript).call("make", &"", "", -1.0, TOPIC, data)

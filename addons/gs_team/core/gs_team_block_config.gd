@@ -26,7 +26,7 @@ extends GSConfig
 
 
 func env_prefix() -> String:
-	return "DOT_TEAM_BLOCK_"
+	return "GS_TEAM_BLOCK_"
 
 
 func cli_prefix() -> String:

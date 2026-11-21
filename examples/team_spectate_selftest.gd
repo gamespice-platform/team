@@ -1,6 +1,6 @@
 extends Node
 
-## Exercises dot-team against a real team roster and a real spectator manager.
+## Exercises gs-team against a real team roster and a real spectator manager.
 ##
 ## The bridge is the part worth checking hardest: GameSpice Spectate numbers its sides and
 ## GameSpice Team names them, and an off-by-one in the mapping silently inverts who may watch
@@ -27,7 +27,7 @@ func _ready() -> void:
 
 
 func _run() -> void:
-	_line("dot-team self-test")
+	_line("gs-team self-test")
 	_line("")
 
 	_test_rules()
@@ -144,7 +144,7 @@ func _test_rules() -> void:
 	)
 	_check(GSTeamSpectateRules.presets().size() == 3, "three presets")
 	_check(GSTeamSpectateRules.preset(&"open") != null, "resolving by name")
-	_check(r.env_prefix() == "DOT_TEAM_SPECTATE_", "with the family's config layering")
+	_check(r.env_prefix() == "GS_TEAM_SPECTATE_", "with the family's config layering")
 
 
 func _test_setup() -> void:
@@ -207,9 +207,9 @@ func _test_bridge() -> void:
 	)
 	_check(
 		s.team_index(GSTeamSet.SPECTATOR) == 0,
-		"and the spectator side maps to zero — which is exactly what dot-spectate's "
+		"and the spectator side maps to zero — which is exactly what gs-spectate's "
 		+ "force-camera rule means by 'no team', so that rule does the right thing "
-		+ "without being told anything about dot-team"
+		+ "without being told anything about gs-team"
 	)
 	_check(s.team_index(GSTeamSet.UNASSIGNED) == 0, "and so does the holding pen")
 	_check(s.team_index(&"nonsense") == 0, "and an unknown side")
@@ -220,7 +220,7 @@ func _test_bridge() -> void:
 
 	_check(
 		s.spectators.team_fn.call("blue1") == 1,
-		"and dot-spectate asks through the bridge and gets the number"
+		"and gs-spectate asks through the bridge and gets the number"
 	)
 
 	var participants := s.spectators.participants_fn.call() as PackedStringArray
@@ -310,7 +310,7 @@ func _test_policy() -> void:
 	s.spectators.rules.force_camera = 2
 	_check(
 		not s.may_watch("blue1", "blue2").ok,
-		"and dot-spectate's own force-camera setting is applied first — an addon on "
+		"and gs-spectate's own force-camera setting is applied first — an addon on "
 		+ "top does not get to relax the operator's setting"
 	)
 	s.spectators.rules.force_camera = 0
@@ -496,7 +496,7 @@ class StubManager extends Node:
 
 
 func _test_duck_typing() -> void:
-	_section("a manager that is not dot-spectate's")
+	_section("a manager that is not gs-spectate's")
 
 	_alive.clear()
 	_live = true
@@ -517,13 +517,13 @@ func _test_duck_typing() -> void:
 	_check(s.setup().ok, "a stub manager sets up")
 	_check(
 		stub.participants_fn.is_valid(),
-		"and gets the participant list wired into it — dot-team names no "
+		"and gets the participant list wired into it — gs-team names no "
 		+ "GSSpectator* identifier anywhere, so a game with its own camera system gets "
 		+ "the side policy for free"
 	)
 	_check(stub.team_fn.is_valid(), "and the side lookup")
 	_check(stub.target_filter.is_valid(), "and the policy filter")
-	_check(int(stub.team_fn.call("blue1")) == 1, "which answers in dot-spectate's numbers")
+	_check(int(stub.team_fn.call("blue1")) == 1, "which answers in gs-spectate's numbers")
 
 	_alive["blue1"] = false
 	_check(not s.may_watch("blue1", "red1").ok, "and the policy is enforced through it")

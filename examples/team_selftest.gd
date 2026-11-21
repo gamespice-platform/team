@@ -1,6 +1,6 @@
 extends "team_selftest_base.gd"
 
-## Exercises dot-team with no match, no players and no transport.
+## Exercises gs-team with no match, no players and no transport.
 ##
 ## The balance half is checked hardest, for the reason the code gives: autobalance is
 ## the most complained-about thing a server does, and a decision that cannot be
@@ -27,7 +27,7 @@ func _ready() -> void:
 
 
 func _run() -> void:
-	_line("dot-team self-test")
+	_line("gs-team self-test")
 	_line("")
 
 	_test_defs()
@@ -213,7 +213,7 @@ func _test_policy() -> void:
 	_check(GSTeamPolicy.free_for_all().allow_switch == false, "free-for-all has nowhere to go")
 	_check(GSTeamPolicy.presets().size() == 3, "three presets")
 	_check(GSTeamPolicy.preset(&"casual") != null, "resolving by name")
-	_check(p.env_prefix() == "DOT_TEAM_", "and the config layers the family's way")
+	_check(p.env_prefix() == "GS_TEAM_", "and the config layers the family's way")
 
 
 # --- Balance arithmetic -----------------------------------------------------
@@ -560,7 +560,7 @@ func _test_rebalancing() -> void:
 
 
 func _test_mirror_and_match() -> void:
-	_section("mirroring and dot-match")
+	_section("mirroring and gs-match")
 
 	var server := _roster()
 	var _a := server.add("a")
@@ -603,7 +603,7 @@ func _test_mirror_and_match() -> void:
 	)
 	_check(
 		int(fake.assignments["a"]) >= 1,
-		"which are the MANAGER's ids, not dot-team's positions — dot-match's pair is 1 "
+		"which are the MANAGER's ids, not gs-team's positions — gs-match's pair is 1 "
 		+ "and 2, and passing a position straight through would put half the server on "
 		+ "a side that does not exist"
 	)
@@ -614,7 +614,7 @@ func _test_mirror_and_match() -> void:
 	var _spec := server.force_team("c", GSTeamSet.SPECTATOR)
 	_check(
 		fake.assignments.size() == 3,
-		"a move to a non-playing side is not pushed, because dot-match's sides are the "
+		"a move to a non-playing side is not pushed, because gs-match's sides are the "
 		+ "playing ones and there is no index for 'watching'"
 	)
 
