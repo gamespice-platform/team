@@ -31,7 +31,6 @@ addons/gs_team/core/gs_team_rotation.gd::_reason::string_build	1
 addons/gs_team/core/gs_team_rotation.gd::_reason::untyped_array	1
 addons/gs_team/core/gs_team_rotation.gd::forget::untyped_array	1
 addons/gs_team/core/gs_team_rotation.gd::note::alloc	1
-addons/gs_team/core/gs_team_rotation.gd::note::dynamic_call	2
 addons/gs_team/core/gs_team_rotation.gd::note::untyped_array	2
 addons/gs_team/core/gs_team_rotation.gd::pick::untyped_array	1
 addons/gs_team/core/gs_team_set.gd::<members>::untyped_array	1
@@ -61,7 +60,6 @@ addons/gs_team/runtime/gs_team_roster.gd::_score::dynamic_call	1
 addons/gs_team/runtime/gs_team_roster.gd::_switch_refusal::string_build	4
 addons/gs_team/runtime/gs_team_roster.gd::add::alloc	1
 addons/gs_team/runtime/gs_team_roster.gd::apply_wire::alloc	3
-addons/gs_team/runtime/gs_team_roster.gd::apply_wire::dynamic_call	2
 addons/gs_team/runtime/gs_team_roster.gd::apply_wire::string_build	1
 addons/gs_team/runtime/gs_team_roster.gd::apply_wire::untyped_array	2
 addons/gs_team/runtime/gs_team_roster.gd::best_team_for::alloc	1
