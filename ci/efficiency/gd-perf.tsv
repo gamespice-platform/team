@@ -16,10 +16,7 @@ addons/gs_team/core/gs_team_block_rules.gd::_side::dynamic_call	1
 addons/gs_team/core/gs_team_block_rules.gd::_side::string_build	1
 addons/gs_team/core/gs_team_block_rules.gd::apply_state_string::alloc	2
 addons/gs_team/core/gs_team_block_rules.gd::bind_cvars::untyped_array	2
-addons/gs_team/core/gs_team_block_rules.gd::cvar_specs::alloc	6
-addons/gs_team/core/gs_team_block_rules.gd::cvar_specs::string_build	3
 addons/gs_team/core/gs_team_block_rules.gd::describe::untyped_array	1
-addons/gs_team/core/gs_team_block_rules.gd::follow_cvars::dynamic_call	2
 addons/gs_team/core/gs_team_block_rules.gd::relation::alloc	1
 addons/gs_team/core/gs_team_block_rules.gd::request::alloc	2
 addons/gs_team/core/gs_team_block_rules.gd::request::untyped_array	2
@@ -27,9 +24,7 @@ addons/gs_team/core/gs_team_block_rules.gd::state_string::string_build	1
 addons/gs_team/core/gs_team_block_rules.gd::state_string::untyped_array	2
 addons/gs_team/core/gs_team_def.gd::<members>::untyped_array	1
 addons/gs_team/core/gs_team_policy.gd::preset::dynamic_call	1
-addons/gs_team/core/gs_team_policy.gd::presets::alloc	1
 addons/gs_team/core/gs_team_policy.gd::presets::untyped_array	1
-addons/gs_team/core/gs_team_policy.gd::validate::string_build	4
 addons/gs_team/core/gs_team_rotation.gd::<members>::untyped_array	2
 addons/gs_team/core/gs_team_rotation.gd::_before::untyped_array	1
 addons/gs_team/core/gs_team_rotation.gd::_reason::string_build	1
@@ -48,14 +43,10 @@ addons/gs_team/core/gs_team_set.gd::palette_name::string_build	1
 addons/gs_team/core/gs_team_set.gd::playing_ids::alloc	1
 addons/gs_team/core/gs_team_set.gd::playing_teams::alloc	1
 addons/gs_team/core/gs_team_set.gd::preset::dynamic_call	1
-addons/gs_team/core/gs_team_set.gd::presets::alloc	1
-addons/gs_team/core/gs_team_set.gd::presets::dynamic_call	4
 addons/gs_team/core/gs_team_set.gd::presets::untyped_array	1
 addons/gs_team/core/gs_team_set.gd::sorted_teams::alloc	2
 addons/gs_team/core/gs_team_spectate_rules.gd::preset::dynamic_call	1
-addons/gs_team/core/gs_team_spectate_rules.gd::presets::alloc	1
 addons/gs_team/core/gs_team_spectate_rules.gd::presets::untyped_array	1
-addons/gs_team/core/gs_team_spectate_rules.gd::validate::alloc	1
 addons/gs_team/runtime/gs_team_roster.gd::<members>::untyped_array	2
 addons/gs_team/runtime/gs_team_roster.gd::_candidates::alloc	2
 addons/gs_team/runtime/gs_team_roster.gd::_counts_without::untyped_array	1

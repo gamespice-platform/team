@@ -3,3 +3,5 @@
 addons/gs_team/core/*.gd
 addons/gs_team/runtime/gs_team_roster.gd
 addons/gs_team/runtime/gs_team_spectate.gd
+# Run once (cvar/spec tables, config parsing, save/restore, descriptions), not per tick:
+cold+: ^(from_.*|describe.*|specs|cvar_specs|_absorb_specs|set_cvar|follow_cvars|validate.*|presets|properties|standard_pair|restore|_restore_.*|to_config|parse_.*|_parse_.*|find_spot)$
