@@ -1,0 +1,5 @@
+# Server tick scripts checked by gs-ci scripts/check-gd-perf.py (tools/gd_perf_lint.py).
+# One fnmatch glob per line over tracked paths. Baseline: ci/efficiency/gd-perf.tsv.
+addons/gs_team/core/*.gd
+addons/gs_team/runtime/gs_team_roster.gd
+addons/gs_team/runtime/gs_team_spectate.gd
